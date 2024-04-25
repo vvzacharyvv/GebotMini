@@ -1,0 +1,7 @@
+*.vscode
+<<<<<<< HEAD
+./software/src/MotionControl/MotionControl.*
+./software/include/MotionControl/MotionControl.*
+=======
+build
+>>>>>>> origin/master
