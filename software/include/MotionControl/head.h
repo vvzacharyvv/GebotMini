@@ -30,11 +30,15 @@
 #define loopRateStateUpdateSend 20.0   //hz
 #define loopRateImpCtller 100.0   //hz
 #define loopRateDataSave 100 //hz
+#define loopRateSVRead   20.0//hz
 #define VELX 6.0/1000    // mm  step length = VELX * timeForStancePhase        
 #define TimePeriod 0.05
 #define TimeForGaitPeriod 8
 #define PI 3.1415926
-
+#define THREHOLDLF 1500
+#define THREHOLDRF 1500
+#define THREHOLDLH 1500
+#define THREHOLDRH 1500
 #define PrePsotiveFactor 0.04
 
 

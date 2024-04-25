@@ -50,7 +50,8 @@ uint16_t ADS1x15::read_comparator(uint8_t mux, int gain, int data_rate, uint16_t
                         int low_threshold, bool active_low, bool traditional, bool latching,
                         int num_readings) {
         assert(num_readings == 1 || num_readings == 2 || num_readings == 4);
-
+        high_threshold=Convert(high_threshold);
+        low_threshold=Convert(low_threshold);
         // Set high and low threshold register values
         wiringPiI2CWriteReg16(device, ADS1x15_POINTER_HIGH_THRESHOLD, high_threshold);
         wiringPiI2CWriteReg16(device, ADS1x15_POINTER_LOW_THRESHOLD, low_threshold);
@@ -98,7 +99,7 @@ uint16_t ADS1x15::read_comparator(uint8_t mux, int gain, int data_rate, uint16_t
         // Set number of comparator hits before alerting
         config |= ADS1x15_CONFIG_COMP_QUE[num_readings];
         // Add comparator queue configuration here
-
+        config=Convert(config);
         // Send the config value to start the ADC conversion
         wiringPiI2CWriteReg16(device, ADS1x15_POINTER_CONFIG, config);
 
@@ -108,7 +109,7 @@ uint16_t ADS1x15::read_comparator(uint8_t mux, int gain, int data_rate, uint16_t
         // Retrieve the result
         // Read the conversion register value and return it
         uint16_t result = wiringPiI2CReadReg16(device, ADS1x15_POINTER_CONVERSION);
-        return _conversion_value(result & 0xFF, (result >> 8) & 0xFF);
+        return _conversion_value((result >> 8) & 0xFF,result & 0xFF);
     }
 
 uint16_t ADS1x15::read_adc(uint8_t channel, int gain , int data_rate) {
@@ -168,6 +169,7 @@ void ADS1x15::stop_adc() {
         // Set the config register to its default value of 0x8583 to stop
         // continuous conversions
         uint16_t config = 0x8583;
+        config=Convert(config);
         wiringPiI2CWriteReg16(device,ADS1x15_POINTER_CONFIG, config);
     }
 

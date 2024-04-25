@@ -32,7 +32,7 @@ int main()
         gettimeofday(&startTime,NULL);
         for(int i=0;i<4;i++){
             value[i]=ads.read_adc(i,gain);
-              usleep(10000);
+              usleep(8000);
         }
         for(auto a:value){
             std::cout<<a<<" ";

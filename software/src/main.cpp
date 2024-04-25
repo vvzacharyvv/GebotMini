@@ -1,5 +1,5 @@
 #include"robotcontrol.h"
-
+#include "ADS1x15.h"
 #define CHECK_RET(q) if((q)==false){return 0;}
 CRobotControl rbt(110.0,60.0,20.0,800.0,ADMITTANCE);
 bool runFlag=0;
@@ -76,15 +76,12 @@ void *dataSave(void *data)
 
     while(rbt.bInitFlag == 0) //wait for initial
         usleep(1e2);
-
      rbt.UpdateImuData();
     for (int i = 0; i < 3; i++)
         fAngleZero[i] = rbt.api.fAngle[i];
-
     // WitCaliRefAngle();                               //  归零失败
     // u16 xx = rbt.api.fAngle[0] * 32768.0f / 180.0f;  
     // WitWriteReg(XREFROLL, xx); //sReg[Roll]          //  归零失败
-
 	while(1)
 	{
         if(runFlag)
@@ -244,7 +241,8 @@ void *robotStateUpdateSend(void *data)
             double timeUse;
             gettimeofday(&startTime,NULL);
             //If stay static, annotate below one line.
-             rbt.NextStep();
+            
+            rbt.NextStep();
             rbt.AirControl();
             // rbt.AttitudeCorrection90();
             
@@ -337,12 +335,36 @@ void *runImpCtller(void *data)
     }
   
 }
+void *SvUpdate(void *data)
+{   
+    ADS1015 ads;
+    while(1){
+        struct timeval startTime,endTime;
+        double timeUse;
+        vector<int> value(4);
+        int gain=1;
+        for(int i=0;i<4;i++)
+        {
+            value[i]=(int)ads.read_adc(i,gain);
+            usleep(10000);
+        }
+        rbt.UpdateSvStatus(value);
+        
 
+
+
+        gettimeofday(&endTime,NULL);
+        timeUse = 1e6*(endTime.tv_sec - startTime.tv_sec) + endTime.tv_usec - startTime.tv_usec;
+        if(timeUse < 1e4)
+        usleep(1.0/loopRateSVRead*1e6 - (double)(timeUse) - 10); 
+    }
+
+}
 int main(int argc, char ** argv)
 {   
     
     
-    pthread_t th1, th2, th3, th4;
+    pthread_t th1, th2, th3, th4,th5;
 	int ret;
     ret = pthread_create(&th1,NULL,udpConnect,NULL);
     if(ret != 0)
@@ -368,11 +390,18 @@ int main(int argc, char ** argv)
 		printf("create pthread4 error!\n");
 		exit(1);
 	}
+     ret = pthread_create(&th5,NULL,SvUpdate,NULL);
+    if(ret != 0)
+	{
+		printf("create pthread4 error!\n");
+		exit(1);
+	}
     
-    // pthread_join(th1, NULL);
+    pthread_join(th1, NULL);
     pthread_join(th2, NULL);
     pthread_join(th3, NULL);
-    // pthread_join(th4, NULL);
+    pthread_join(th4, NULL);
+    pthread_join(th5, NULL);
     while(1);
 
     

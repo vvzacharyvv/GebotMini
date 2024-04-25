@@ -13,6 +13,10 @@ CGebot::CGebot(float length,float width,float height,float mass)
     m_fWidth=width/1000.0;
     m_fHeight=height/1000.0;
     m_fMass=mass/1000.0; //g->kg
+    m_threhold[0]=THREHOLDLF;
+    m_threhold[1]=THREHOLDRF;
+    m_threhold[2]=THREHOLDLH;
+    m_threhold[3]=THREHOLDRH;
     mfShoulderPos<<m_fWidth/2, m_fLength/2, 0,1,m_fWidth/2, -m_fLength/2,0,1, -m_fWidth/2, m_fLength/2,0,1,-m_fWidth/2, -m_fLength/2,0,1;  // X-Y: LF, RF, LH, RH
 
     fSwingPhaseStatusPart[0]=0.3; //detach
@@ -307,7 +311,7 @@ void CGebot::NextStep()
     for(uint8_t legNum=0; legNum<4; legNum++)  // run all 4 legs
     {   
         UpdateLegStatus(legNum);
-        enum_LEGSTATUS ls=m_glLeg[legNum]->GetLegStatus();
+        enum_LEGSTATUS ls=m_glLeg[legNum]->GetLegStatus(); //get present status
         if(legNum<2)
             fStepHeight = StepHeight_F;
         else
@@ -695,4 +699,10 @@ void CGebot::AttitudeCorrection90()
                         attALLx, 0, 0;
     }
 
+}
+void CGebot::UpdateTouchStatus(vector<int> values){
+    for(int i=0;i<4;i++){
+    m_glLeg[i]->setTouchStatus(values[i]>m_threhold[i]?true:false);
+    }
+ 
 }

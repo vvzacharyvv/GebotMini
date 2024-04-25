@@ -6,7 +6,7 @@ CLeg::CLeg(enum_LEGNAME name,float L1,float L2,float L3)
     m_fL1=L1/1000.0; // mm->m
     m_fL2=L2/1000.0;
     m_fL3=L3/1000.0;
-
+    m_svStatus=false;
 }
 /**
  * @brief update m_fTheta with jointPos (preseent or cmd)
@@ -175,6 +175,14 @@ Matrix<float,3,1> CLeg::ForwardKinematic()
         return legPos;
 }
 
+void CLeg::setTouchStatus(bool status)
+{
+    m_touchStatus=status;
+}
+bool  CLeg::getTouchStatus()
+{
+    return m_touchStatus;
+}
 /**
  * @brief inverse Kinematics
  * 

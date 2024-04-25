@@ -5,6 +5,7 @@ class CGebot{
 
 public:
     float m_fLength,m_fWidth,m_fHeight,m_fMass,m_fIxx,m_fIyy,m_fIzz; //2*(distance from com to shoulder);
+    float m_threhold[4];
     CLeg* m_glLeg[4];
 
 
@@ -24,6 +25,7 @@ public:
     float fStancePhaseStatusPart[2];  // //stance phase status, recover - stance , sum = 1;
     int iStatusCounter[4], iStatusCounterBuffer[4][6];
     float fStepHeight;
+    
     
     Matrix<float, 6,1> vfTargetCoMVelocity;  // X, Y , Z ,yaw in world cordinate
     Matrix<float, 6,1> vfPresentCoMVelocity;  // X, Y , Z ,yaw in world cordinate
@@ -65,6 +67,7 @@ public:
     void ForwardKinematics(int mode);
     void InverseKinematics(Matrix<float, 4, 3> cmdpos);   // standing state
     void UpdateFtsPresVel(); 
+    void UpdateTouchStatus(vector<int> values);
     //robot control
     //pump control
     uint8_t svStatus=0b00000000;
