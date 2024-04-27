@@ -1,3 +1,4 @@
+#pragma once
 #ifndef leg_H
 #define leg_H
 #include "controlhelper.h"

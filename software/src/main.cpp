@@ -235,7 +235,7 @@ void *robotStateUpdateSend(void *data)
     Matrix<float, 4, 3> mfJointTemp; 
     while(1)
     {
-        if(runFlag)
+        if(runFlag&&rbt.autoControlFlag)
         {
             struct timeval startTime,endTime;
             double timeUse;
@@ -276,7 +276,7 @@ void *runImpCtller(void *data)
     rbt.dxlMotors.torqueEnable();
     while (1)
     {
-        if(runFlag)
+        if(runFlag&&rbt.autoControlFlag)
         {
             gettimeofday(&startTime,NULL);
             /* get motors data  */
@@ -298,14 +298,14 @@ void *runImpCtller(void *data)
 
 
             /*      Admittance control     */ 
-            rbt.Control();   
-            rbt.InverseKinematics(rbt.mfXc);    // Admittance control
+            // rbt.Control();   
+            // rbt.InverseKinematics(rbt.mfXc);    // Admittance control
 
             /*      Postion control with Comp      */
             // rbt.InverseKinematics(rbt.mfTargetPos); //    Postion control
 
             /*      Postion control      */
-            // rbt.InverseKinematics(rbt.mfLegCmdPos); 
+             rbt.InverseKinematics(rbt.mfLegCmdPos); 
 
 
             // cout<<"mfJointCmdPos:"<<rbt.mfJointCmdPos;
@@ -338,19 +338,38 @@ void *runImpCtller(void *data)
 void *SvUpdate(void *data)
 {   
     ADS1015 ads;
+    vector<int> value(4),preValue(4),prepreValue(4);
+    for(auto a:value)
+        a=0;
+    preValue=value;
+    prepreValue=value;
     while(1){
         struct timeval startTime,endTime;
         double timeUse;
-        vector<int> value(4);
         int gain=1;
         for(int i=0;i<4;i++)
         {
             value[i]=(int)ads.read_adc(i,gain);
             usleep(10000);
         }
-        rbt.UpdateSvStatus(value);
-        
+        rbt.UpdateTouchStatus(value,preValue,prepreValue);
+        prepreValue=preValue;
+        preValue=value;
 
+        if(rbt.autoControlFlag == false){
+            int count=0;
+            for(auto a:rbt.m_glLeg){
+                if(a->getTouchStatus()==true)   count++;
+            }
+            if(count == 4){
+                rbt.autoControlFlag=true;
+                for (size_t i = 0; i < 4; i++)
+                {
+                    if(rbt.m_glLeg[i]->GetLegStatus()!=recover&&rbt.m_glLeg[i]->GetLegStatus()!=stance)
+                      rbt.probeTrigger[i]=true;
+                }
+            }
+        }
 
 
         gettimeofday(&endTime,NULL);

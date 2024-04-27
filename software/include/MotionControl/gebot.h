@@ -1,3 +1,4 @@
+#pragma once
 #include "leg.h"
 using namespace Eigen;
 using namespace std;
@@ -24,8 +25,12 @@ public:
     float fSwingPhaseStatusPart[4];   //swing phase status, dettach - swingUp - swingDown - attach , sum = 1;
     float fStancePhaseStatusPart[2];  // //stance phase status, recover - stance , sum = 1;
     int iStatusCounter[4], iStatusCounterBuffer[4][6];
+    float Tsu,Tst; //time of swing up and stance,its fixed
+    float v_swingDown,v_rec ;
     float fStepHeight;
-    
+    float attchDis[4];
+    int attchTimes[4];
+    bool touchTrigger[4],probeTrigger[4],autoControlFlag;
     
     Matrix<float, 6,1> vfTargetCoMVelocity;  // X, Y , Z ,yaw in world cordinate
     Matrix<float, 6,1> vfPresentCoMVelocity;  // X, Y , Z ,yaw in world cordinate
@@ -67,7 +72,7 @@ public:
     void ForwardKinematics(int mode);
     void InverseKinematics(Matrix<float, 4, 3> cmdpos);   // standing state
     void UpdateFtsPresVel(); 
-    void UpdateTouchStatus(vector<int> values);
+    void UpdateTouchStatus(vector<int> values,vector<int> prevalues,vector<int> preprevalues);
     //robot control
     //pump control
     uint8_t svStatus=0b00000000;

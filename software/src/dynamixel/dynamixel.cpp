@@ -274,8 +274,18 @@ void DxlAPI::setPosition(vector<float> posVector)
     bool dxl_addparam_result;
     int dxl_comm_result;
     //calculate ang 
+    for (auto pos:posVector)
+    {
+        if(pos<10e-7&&pos>-10e-7)
+            pos=0;
+    }
+    
     for(int i =0; i<MOTOR_NUM; i++)
        ang[i] = (int) (posVector[i]/(3.1416*2)*4096 + 2047); 
+    // for(auto a:ang){
+    //     cout<<""<<(int)a<<" ";
+    // }
+    // cout<<endl;
     dynamixel::GroupSyncWrite groupSyncWritePosition(portHandler, packetHandler, ADDR_PRO_GOAL_POSITION, ADDR_PRO_GOAL_POSITION_LENGTH);
     for(int i=0; i<MOTOR_NUM; i++)
     {

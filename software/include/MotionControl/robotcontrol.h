@@ -1,3 +1,4 @@
+#pragma once
 #ifndef RBOBOTCONTROL_H
 #define RBOBOTCONTROL_H
 #include "gebot.h"

@@ -53,7 +53,7 @@ void CRobotControl::UpdateImuData()
     vfGravity[0]=vfGravity[1];
     vfGravity[1]=temp;
     
-    cout<<"vfGravity: "<<vfGravity<<endl;
+    // cout<<"vfGravity: "<<vfGravity<<endl;
     //cout<<"api.fAngle ";
     // for (size_t i = 0; i < 3; i++)
     // {
@@ -413,6 +413,6 @@ void CRobotControl::CalVmcCom()
     //  }
     //  cout<<endl;
      
-    cout<<"mfTargetForce:\n"<<mfTargetForce<<endl;
+   // cout<<"mfTargetForce:\n"<<mfTargetForce<<endl;
 }
 #endif

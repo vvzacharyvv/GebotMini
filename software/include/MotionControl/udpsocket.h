@@ -1,3 +1,4 @@
+#pragma once
 #ifndef UDPSOCKET_H
 #define UDPSOCKET_H
 #include <cstdio>

@@ -1,3 +1,4 @@
+#pragma once
 #ifndef head_H
 #define head_H
 
@@ -35,10 +36,12 @@
 #define TimePeriod 0.05
 #define TimeForGaitPeriod 8
 #define PI 3.1415926
-#define THREHOLDLF 1500
-#define THREHOLDRF 1500
-#define THREHOLDLH 1500
-#define THREHOLDRH 1500
+#define THREHOLDLF 800
+#define THREHOLDRF 800
+#define THREHOLDLH 800
+#define THREHOLDRH 800
+#define ATTACHDIS_MAX 30.0/1000
+#define ATTACH_TIMES  20
 #define PrePsotiveFactor 0.04
 
 

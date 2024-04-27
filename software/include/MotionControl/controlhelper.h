@@ -1,3 +1,4 @@
+#pragma once
 #ifndef CONTROLHELPER_H
 #define CONTROLHELPER_H
 #include "head.h"
