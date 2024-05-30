@@ -23,23 +23,57 @@ int main()
 {
       
     /*********adc test********/
-    // struct timeval startTime,endTime;
-    // double timeUse;
-    //API api;
-    // vector<int> ID;
-    // vector<float> start_pos;
-    // vector<float> target_tor;
-    // for(int i=1; i<=12; i++)
-    // {
-    // ID.push_back(i);
-    // start_pos.push_back(0.00);
-    // }
-    // DxlAPI gecko("/dev/ttyAMA0", 2000000, ID, 2); //ttyUSB0
-    // // gecko.setBaudRate(5);
-    // gecko.setOperatingMode(3);  //3 position control; 0 current control
-    // gecko.torqueEnable();
-    // gecko.setPosition(start_pos);
-    // gecko.getPosition();
+    struct timeval startTime,endTime;
+    double timeUse;
+    API api;
+    vector<int> ID;
+    vector<float> start_pos;
+    vector<float> target_tor;
+    for(int i=1; i<=16; i++)
+    {
+    ID.push_back(i);
+    start_pos.push_back(0.00);
+    }
+    DxlAPI gecko("/dev/ttyAMA0", 1000000, ID, 2); //ttyUSB0
+    // gecko.setBaudRate(5);
+    gecko.setOperatingMode(3);  //3 position control; 0 current control
+    gecko.torqueEnable();
+    gecko.setPosition(start_pos);
+    gecko.getPosition();
+    int times=1;
+    bool reverse=false;
+    while(1)
+    {
+     vector<float> pos2(16);
+    for(auto a : pos2){
+        a=0;
+    }
+    if(!reverse){
+    times++;
+    pos2[11]=((float)times)/2000.0 * 3.14;
+    pos2[15]=((float)times)/2000.0 * 3.14;
+    pos2[8]=-((float)times)/2000.0 * 3.14;
+    pos2[14]=((float)times)/2000.0 * 3.14;
+    pos2[5]=-((float)times)/2000.0 * 3.14;
+    pos2[13]=((float)times)/2000.0 * 3.14;
+    pos2[2]=((float)times)/2000.0 * 3.14;
+    pos2[12]=((float)times)/2000.0 * 3.14;
+    if(times>1000) reverse=true;
+    }
+    else{
+        times--;
+    pos2[11]=((float)times)/2000.0 * 3.14;
+    pos2[15]=((float)times)/2000.0 * 3.14;
+    pos2[8]=-((float)times)/2000.0 * 3.14;
+    pos2[14]=((float)times)/2000.0 * 3.14;
+    pos2[5]=-((float)times)/2000.0 * 3.14;
+    pos2[13]=((float)times)/2000.0 * 3.14;
+    pos2[2]=((float)times)/2000.0 * 3.14;
+    pos2[12]=((float)times)/2000.0 * 3.14;
+    if(times<0) reverse=false;
+    }
+
+    }
     //~ usleep(1e6);
     //  api.setPump(1, LOW);
     //  api.setPump(24, LOW);
@@ -48,90 +82,140 @@ int main()
     // float torque[12];
     // usleep(1e6);
      //api.setSV(svStatus);
- CRobotControl rbt(110.0,60.0,20.0,800.0,ADMITTANCE);
-    Matrix<float,4,2> TimeForSwingPhase;
-    Matrix<float, 4, 3> InitPos;
-    Matrix<float, 6,1> TCV;
-    TCV << 0.001/1000, 0, 0,0,0,0 ;// X, Y , alpha 
-   float  float_initPos[12]={    60, 60, -30,
-                                 60,-60, -30,
-                                -60, 60, -30,
-                                -60,-60, -30};
-    // float  float_initPos[12];
-    // string2float("../include/initPos.csv", float_initPos);//Foot end position
-    for(int i=0; i<4; i++)
-        for(int j=0;j<3;j++)
-        {
+//  CRobotControl rbt(110.0,60.0,20.0,800.0,ADMITTANCE);
+// // rbt.dxlMotors.torqueEnable();
+//     Matrix<float,4,2> TimeForSwingPhase;
+//     Matrix<float, 4, 3> InitPos;
+//     Matrix<float, 6,1> TCV;
+//     TCV << 0.001/1000, 0, 0,0,0,0 ;// X, Y , alpha 
+//    float  float_initPos[12]={    60, 60, -30,
+//                                  60,-60, -30,
+//                                 -60, 60, -30,
+//                                 -60,-60, -30};
+//     // float  float_initPos[12];
+//     // string2float("../include/initPos.csv", float_initPos);//Foot end position
+//     for(int i=0; i<4; i++)
+//         for(int j=0;j<3;j++)
+//         {
            
-            InitPos(i, j) = float_initPos[i*3+j]/1000;
-            // cout<<InitPos(i, j)<<endl;
-        }
+//             InitPos(i, j) = float_initPos[i*3+j]/1000;
+//             // cout<<InitPos(i, j)<<endl;
+//         }
    
-    rbt.SetInitPos(InitPos);
-    rbt.InverseKinematics(rbt.mfLegCmdPos);
-    cout<<"cmdPos: "<<rbt.mfJointCmdPos<<endl;
-    vector<float> pos(12);
-    for(auto a : pos){
-        a=0;
-    }
-   rbt.dxlMotors.setPosition(pos);
-   //rbt.SetPos(rbt.mfJointCmdPos);
-    usleep(1e6);
-   rbt.SetCoMVel(TCV);
-    TimeForSwingPhase<< 8*TimeForGaitPeriod/16, 	11*TimeForGaitPeriod/16,		
-                        0,		 		 					3*TimeForGaitPeriod/16,		
-                        12*TimeForGaitPeriod/16, 	15*TimeForGaitPeriod/16,		
-                        4*TimeForGaitPeriod/16, 	7*TimeForGaitPeriod/16;
-    rbt.SetPhase(TimePeriod, TimeForGaitPeriod, TimeForSwingPhase);
-    ADS1015 ads;
+//     rbt.SetInitPos(InitPos);
+//     rbt.InverseKinematics(rbt.mfLegCmdPos);
+//     cout<<"cmdPos: "<<rbt.mfJointCmdPos<<endl;
+//     vector<float> pos(16);
+//     for(auto a : pos){
+//         a=0;
+//     }
+//    rbt.dxlMotors.setPosition(pos);
+//    //rbt.SetPos(rbt.mfJointCmdPos);
+//    rbt.PumpAllPositve();
+//     usleep(1e6);
+//    rbt.SetCoMVel(TCV);
+//     TimeForSwingPhase<< 8*TimeForGaitPeriod/16, 	11*TimeForGaitPeriod/16,		
+//                         0,		 		 					3*TimeForGaitPeriod/16,		
+//                         12*TimeForGaitPeriod/16, 	15*TimeForGaitPeriod/16,		
+//                         4*TimeForGaitPeriod/16, 	7*TimeForGaitPeriod/16;
+//     rbt.SetPhase(TimePeriod, TimeForGaitPeriod, TimeForSwingPhase);
+//     //ADS1015 ads;
 
    
-    // while(1){
-    //     struct timeval startTime,endTime;
-    //     double timeUse;
-    //     gettimeofday(&startTime,NULL);
-    //     for(int i=0;i<4;i++){
-    //         value[i]=ads.read_adc(i,gain);
-    //           usleep(8000);
-    //     }
-    //     for(auto a:value){
-    //         std::cout<<a<<" ";
-    //     }
-    //     std::cout<<std::endl;
-    //     gettimeofday(&endTime,NULL);
-    //     timeUse = 1e6*(endTime.tv_sec - startTime.tv_sec)+ endTime.tv_usec - startTime.tv_usec;
-    //     std::cout<<"timeUse="<<timeUse<<std::endl;
-    // }
-    /*********adc test********/
-     vector<int> value(4),preValue(4),prepreValue(4);
-    for(auto a:value)
-        a=0;
-    preValue=value;
-    prepreValue=value;
+//     // while(1){
+//     //     struct timeval startTime,endTime;
+//     //     double timeUse;
+//     //     gettimeofday(&startTime,NULL);
+//     //     for(int i=0;i<4;i++){
+//     //         value[i]=ads.read_adc(i,gain);
+//     //           usleep(8000);
+//     //     }
+//     //     for(auto a:value){
+//     //         std::cout<<a<<" ";
+//     //     }
+//     //     std::cout<<std::endl;
+//     //     gettimeofday(&endTime,NULL);
+//     //     timeUse = 1e6*(endTime.tv_sec - startTime.tv_sec)+ endTime.tv_usec - startTime.tv_usec;
+//     //     std::cout<<"timeUse="<<timeUse<<std::endl;
+//     // }
+//     /*********adc test********/
+//      vector<int> value(4),preValue(4),prepreValue(4);
+//     for(auto a:value)
+//         a=0;
+//     preValue=value;
+//     prepreValue=value;
    
-    for(int times=0; times<2000; times++)
-    {
-        std::cout<<times<<std::endl;
-        rbt.NextStep();
-        rbt.InverseKinematics(rbt.mfLegCmdPos);
-     
-        int gain=1;
-        for(int i=0;i<4;i++)
-        {
-            value[i]=(int)ads.read_adc(i,gain);
-            usleep(10000);
-        }
-        rbt.UpdateTouchStatus(value,preValue,prepreValue);
-        prepreValue=preValue;
-        preValue=value;
+// //     for(int times=0; times<2000; times++)
+// //     {
+// //        // std::cout<<times<<std::endl;
+// //        // rbt.NextStep();
+// //        //rbt.InverseKinematics(rbt.mfLegCmdPos);
+// //     vector<float> pos2(16);
+// //     for(auto a : pos2){
+// //         a=0;
+// //     }
+// //     pos2[11]=((float)times)/2000.0 * 3.14;
+// //     pos2[15]=((float)times)/2000.0 * 3.14;
+// //     pos2[8]=-((float)times)/2000.0 * 3.14;
+// //     pos2[14]=((float)times)/2000.0 * 3.14;
+// //     pos2[5]=-((float)times)/2000.0 * 3.14;
+// //     pos2[13]=((float)times)/2000.0 * 3.14;
+// //     pos2[2]=((float)times)/2000.0 * 3.14;
+// //     pos2[12]=((float)times)/2000.0 * 3.14;
+// //    rbt.dxlMotors.setPosition(pos2);
+// //         // int gain=1;
+// //         // for(int i=0;i<4;i++)
+// //         // {
+// //         //     value[i]=(int)ads.read_adc(i,gain);
+// //         //     usleep(10000);
+// //         // }
+// //         // rbt.UpdateTouchStatus(value,preValue,prepreValue);
+// //         // prepreValue=preValue;
+// //         // preValue=value;
 
-       // rbt.SetPos(rbt.mfJointCmdPos);
-        usleep(1e3);
-    }
-    
+// //        // rbt.SetPos(rbt.mfJointCmdPos);
+// //         usleep(1e3);
+// //     }
+//     int times=0;
+//    bool reverse=false;
+//     while(1){
+        
+//        // std::cout<<times<<std::endl;
+//        // rbt.NextStep();
+//        //rbt.InverseKinematics(rbt.mfLegCmdPos);
+//       rbt.dxlMotors.getTorque();
+//      rbt.dxlMotors.getPosition();
+//      rbt.dxlMotors.getVelocity();
+//     vector<float> pos2(16);
+//     for(auto a : pos2){
+//         a=0;
+//     }
+//     if(!reverse){
+//     times++;
+//     pos2[11]=((float)times)/2000.0 * 3.14;
+//     pos2[15]=((float)times)/2000.0 * 3.14;
+//     pos2[8]=-((float)times)/2000.0 * 3.14;
+//     pos2[14]=((float)times)/2000.0 * 3.14;
+//     pos2[5]=-((float)times)/2000.0 * 3.14;
+//     pos2[13]=((float)times)/2000.0 * 3.14;
+//     pos2[2]=((float)times)/2000.0 * 3.14;
+//     pos2[12]=((float)times)/2000.0 * 3.14;
+//     if(times>1000) reverse=true;
+//     }
+//     else{
+//         times--;
+//     pos2[11]=((float)times)/2000.0 * 3.14;
+//     pos2[15]=((float)times)/2000.0 * 3.14;
+//     pos2[8]=-((float)times)/2000.0 * 3.14;
+//     pos2[14]=((float)times)/2000.0 * 3.14;
+//     pos2[5]=-((float)times)/2000.0 * 3.14;
+//     pos2[13]=((float)times)/2000.0 * 3.14;
+//     pos2[2]=((float)times)/2000.0 * 3.14;
+//     pos2[12]=((float)times)/2000.0 * 3.14;
+//     if(times<0) reverse=false;
+//     }
    
-
-    
-
-
+//    rbt.dxlMotors.setPosition(pos2);   
+//    usleep(1e3); 
+// }
 }

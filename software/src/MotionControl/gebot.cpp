@@ -4,11 +4,11 @@
 
 CGebot::CGebot(float length,float width,float height,float mass)
 {
-    dxlMotors.init("/dev/ttyAMA0", 3000000, ID, 2);  // CAN NOT 4M.   ttyUSB0 ttyAMA0      
-    m_glLeg[0] = new CLeg(LF,60.0,60.0,30.0);  // mm
-    m_glLeg[1] = new CLeg(RF,60.0,60.0,30.0);
-    m_glLeg[2] = new CLeg(LH,60.0,60.0,30.0);
-    m_glLeg[3] = new CLeg(RH,60.0,60.0,30.0);
+    dxlMotors.init("/dev/ttyAMA0", 1000000, ID, 2);  // CAN NOT 4M.   ttyUSB0 ttyAMA0      
+    m_glLeg[0] = new CLeg(LF,65.5,70.0,21.0);  // mm
+    m_glLeg[1] = new CLeg(RF,65.5,70.0,21.0);
+    m_glLeg[2] = new CLeg(LH,65.5,84.0,21.0);
+    m_glLeg[3] = new CLeg(RH,65.5,84.0,21.0); //24
     m_fLength=length/1000.0;
     m_fWidth=width/1000.0;
     m_fHeight=height/1000.0;
@@ -38,7 +38,7 @@ CGebot::CGebot(float length,float width,float height,float mass)
     mfCompensation.setZero();
     mfJointCompDis.setZero();
 
-    for(int i=0;i<12;++i)
+    for(int i=0;i<16;++i)
         vLastSetPos.push_back(0);
     fTimePresent=0.0;
     mfTimePresentForSwing.setZero();
@@ -46,11 +46,15 @@ CGebot::CGebot(float length,float width,float height,float mass)
     dxlMotors.setOperatingMode(3);  //3 position control; 0 current control
     usleep(500);
     dxlMotors.torqueEnable();
-   // dxlMotors.getPosition();
+     dxlMotors.getPosition();
     api.setPump(1, LOW);//LF
     api.setPump(24, LOW);//RF
     api.setPump(28, LOW);//LH
     api.setPump(29, LOW);//RH
+    // api.setPump(1, HIGH);//LF
+    // api.setPump(24, HIGH);//RF
+    // api.setPump(28, HIGH);//LH
+    // api.setPump(29, HIGH);//RH
     usleep(1e6);
 }
 
@@ -468,6 +472,8 @@ void CGebot::InverseKinematics(Matrix<float, 4, 3> cmdpos)
 {
     vector<float> setPos;
     setPos=motorMapping(jointCmdPos);
+    for(int i =0;i<4;i++)
+    setPos.emplace_back(jointCmdPos(i,1));
     for(int i=0; i<4; i++)  
             for(int j=0;j<3;j++)
             {
@@ -490,8 +496,12 @@ void CGebot::InverseKinematics(Matrix<float, 4, 3> cmdpos)
                         vLastSetPos[i*3+j] -= MORTOR_ANGLE_AMP;
                         cout<<"-------------motor_angle_"<<i*3+j<<" -MAX-----------"<<endl;
                     }
-                    else 
-                        vLastSetPos[i*3+j] = setPos[i*3+j];   // now
+                    else {
+                            vLastSetPos[i*3+j] = setPos[i*3+j];   // now
+                            for(int i=12;i<16;i++)
+                            vLastSetPos[i*3+j] = setPos[i*3+j]; 
+                    }
+                        
                 }
                 //cout<<"motor_angle_"<<i*3+j<<": "<<SetPos[i*3+j]<<"  ";
             }   

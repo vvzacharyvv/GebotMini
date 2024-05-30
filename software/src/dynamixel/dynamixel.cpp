@@ -276,16 +276,13 @@ void DxlAPI::setPosition(vector<float> posVector)
     //calculate ang 
     for (auto pos:posVector)
     {
-        if(pos<10e-7&&pos>-10e-7)
+        if(pos<10e-7||pos>-10e-7)
             pos=0;
     }
     
     for(int i =0; i<MOTOR_NUM; i++)
        ang[i] = (int) (posVector[i]/(3.1416*2)*4096 + 2047); 
-    // for(auto a:ang){
-    //     cout<<""<<(int)a<<" ";
-    // }
-    // cout<<endl;
+   
     dynamixel::GroupSyncWrite groupSyncWritePosition(portHandler, packetHandler, ADDR_PRO_GOAL_POSITION, ADDR_PRO_GOAL_POSITION_LENGTH);
     for(int i=0; i<MOTOR_NUM; i++)
     {
@@ -424,7 +421,7 @@ void DxlAPI::getTorque()
         dxl_getdata_result = groupSyncReadCurrent.isAvailable(ID[i], ADDR_PRO_PRESENT_CURRENT, ADDR_PRO_PRESENT_CURRENT_LENGTH);
         if (dxl_getdata_result != true)
         {
-            fprintf(stderr, "[ID:%03d] groupSyncRead getdata failed", ID[i]);
+           fprintf(stderr, "[ID:%03d] groupSyncRead getdata failed", ID[i]);
         }
     }
     for(int i =0; i<MOTOR_NUM; i++)

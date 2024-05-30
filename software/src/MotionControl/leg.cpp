@@ -6,7 +6,7 @@ CLeg::CLeg(enum_LEGNAME name,float L1,float L2,float L3)
     m_fL1=L1/1000.0; // mm->m
     m_fL2=L2/1000.0;
     m_fL3=L3/1000.0;
-    m_touchStatus=false;
+    m_touchStatus=true;
 }
 /**
  * @brief update m_fTheta with jointPos (preseent or cmd)
@@ -189,11 +189,74 @@ bool  CLeg::getTouchStatus()
  * @param cmdpos 
  * Calculcate joint angles (jointCmdPos) for motors with foot position(cmdpos) in shoulder coordinate
  */
+// Matrix<float,3,1> CLeg::InverseKinematic(Matrix<float, 1, 3> cmdpos)
+// {
+//         Matrix<float,3,1> jointCmdPos;
+//         float factor_x, factor_y, factor_z, factor_1, factor_2, factor_0;
+//         float x, y, z;
+//         x = cmdpos(0, 0);
+//         y = cmdpos(0, 1);
+//         z = cmdpos(0, 2);
+//         switch (m_sName)
+//         {
+//         case LF:
+//             factor_x = -1;
+//             factor_y = 1;
+//             factor_z = 1;
+//             factor_1 = 1;
+//             factor_2 = -1;
+//             factor_0 = 1;
+//             break;
+//         case RF:
+//             factor_x = 1;
+//             factor_y = -1;
+//             factor_z = -1;
+//             factor_1 = -1;
+//             factor_2 = 1;
+//             factor_0 = -1;
+//             break;
+//         case LH:
+//             factor_x = -1;
+//             factor_y = 1;
+//             factor_z = 1;
+//             factor_1 = 1;
+//             factor_2 = 1;
+//             factor_0 = -1;
+//             break;
+//         case RH:
+//             factor_x = 1;
+//             factor_y = -1;
+//             factor_z = -1;
+//             factor_1 = -1;
+//             factor_2 = -1;
+//             factor_0 = 1;
+//             break;
+
+//         }
+//         // jointCmdPos(legNum, 1) = atan2(factor_z * z, factor_y * y) + factor_1 * atan2(m_fL3, sqrt(z * z + y * y - m_fL3 * m_fL3));
+//         // jointCmdPos(legNum, 2) = factor_2 * asin((m_fL1 * m_fL1 + m_fL2 * m_fL2 + m_fL3 * m_fL3 - x * x - y * y - z * z) / (2 * m_fL1 * m_fL2));
+//         // jointCmdPos(legNum, 0) = atan2(factor_x * x, sqrt((m_fL1 + factor_0 * sin(jointCmdPos(legNum, 2)) * m_fL2) * (m_fL1 + factor_0 * sin(jointCmdPos(legNum, 2)) * m_fL2) + (cos(jointCmdPos(legNum, 2)) * m_fL2) * (cos(jointCmdPos(legNum, 2)) * m_fL2) - x * x)) + factor_0 * atan2(cos(jointCmdPos(legNum, 2)) * m_fL2, m_fL1 + factor_0 * m_fL2 * sin(jointCmdPos(legNum, 2)));
+//          jointCmdPos(0, 0) = atan2(factor_z * z, factor_y * y) + factor_1 * atan2(m_fL3, sqrt(z * z + y * y - m_fL3 * m_fL3));
+//          jointCmdPos(2, 0) = factor_2 * asin((m_fL1 * m_fL1 + m_fL2 * m_fL2 + m_fL3 * m_fL3 - x * x - y * y - z * z) / (2 * m_fL1 * m_fL2));
+//          jointCmdPos(1, 0) = atan2(factor_x * x, sqrt((m_fL1 + factor_0 * sin(jointCmdPos(2, 0)) * m_fL2) * (m_fL1 + factor_0 * sin(jointCmdPos(2, 0)) * m_fL2) + (cos(jointCmdPos(2, 0)) * m_fL2) * (cos(jointCmdPos(2, 0)) * m_fL2) - x * x)) + factor_0 * atan2(cos(jointCmdPos(2, 0)) * m_fL2, m_fL1 + factor_0 * m_fL2 * sin(jointCmdPos(2, 0)));
+
+//          return jointCmdPos;
+    
+// }
+
+/**
+ * @brief inverse Kinematics
+ * 
+ * @param cmdpos 
+ * Calculcate joint angles (jointCmdPos) for motors with foot position(cmdpos) in shoulder coordinate
+ */
 Matrix<float,3,1> CLeg::InverseKinematic(Matrix<float, 1, 3> cmdpos)
 {
-        Matrix<float,3,1> jointCmdPos;
-        float factor_x, factor_y, factor_z, factor_1, factor_2, factor_0;
-        float x, y, z;
+    Matrix<float,3,1> jointCmdPos;
+    float L1=m_fL1,L2=m_fL2,L3=m_fL3;
+    float factor_x, factor_y, factor_z, factor_1, factor_2, factor_0;
+    float x, y, z;
+ 
         x = cmdpos(0, 0);
         y = cmdpos(0, 1);
         z = cmdpos(0, 2);
@@ -215,32 +278,62 @@ Matrix<float,3,1> CLeg::InverseKinematic(Matrix<float, 1, 3> cmdpos)
             factor_2 = 1;
             factor_0 = -1;
             break;
-        case LH:
-            factor_x = -1;
-            factor_y = 1;
-            factor_z = 1;
-            factor_1 = 1;
-            factor_2 = 1;
-            factor_0 = -1;
+        default:
             break;
-        case RH:
-            factor_x = 1;
-            factor_y = -1;
-            factor_z = -1;
-            factor_1 = -1;
-            factor_2 = -1;
-            factor_0 = 1;
-            break;
-
         }
-        // jointCmdPos(legNum, 1) = atan2(factor_z * z, factor_y * y) + factor_1 * atan2(m_fL3, sqrt(z * z + y * y - m_fL3 * m_fL3));
-        // jointCmdPos(legNum, 2) = factor_2 * asin((m_fL1 * m_fL1 + m_fL2 * m_fL2 + m_fL3 * m_fL3 - x * x - y * y - z * z) / (2 * m_fL1 * m_fL2));
-        // jointCmdPos(legNum, 0) = atan2(factor_x * x, sqrt((m_fL1 + factor_0 * sin(jointCmdPos(legNum, 2)) * m_fL2) * (m_fL1 + factor_0 * sin(jointCmdPos(legNum, 2)) * m_fL2) + (cos(jointCmdPos(legNum, 2)) * m_fL2) * (cos(jointCmdPos(legNum, 2)) * m_fL2) - x * x)) + factor_0 * atan2(cos(jointCmdPos(legNum, 2)) * m_fL2, m_fL1 + factor_0 * m_fL2 * sin(jointCmdPos(legNum, 2)));
-         jointCmdPos(0, 0) = atan2(factor_z * z, factor_y * y) + factor_1 * atan2(m_fL3, sqrt(z * z + y * y - m_fL3 * m_fL3));
-         jointCmdPos(2, 0) = factor_2 * asin((m_fL1 * m_fL1 + m_fL2 * m_fL2 + m_fL3 * m_fL3 - x * x - y * y - z * z) / (2 * m_fL1 * m_fL2));
-         jointCmdPos(1, 0) = atan2(factor_x * x, sqrt((m_fL1 + factor_0 * sin(jointCmdPos(2, 0)) * m_fL2) * (m_fL1 + factor_0 * sin(jointCmdPos(2, 0)) * m_fL2) + (cos(jointCmdPos(2, 0)) * m_fL2) * (cos(jointCmdPos(2, 0)) * m_fL2) - x * x)) + factor_0 * atan2(cos(jointCmdPos(2, 0)) * m_fL2, m_fL1 + factor_0 * m_fL2 * sin(jointCmdPos(2, 0)));
-
-         return jointCmdPos;
+        // jointCmdPos(legNum, 1) = atan2(factor_z * z, factor_y * y) + factor_1 * atan2(L3, sqrt(z * z + y * y - L3 * L3));
+        // jointCmdPos(legNum, 2) = factor_2 * asin((L1 * L1 + L2 * L2 + L3 * L3 - x * x - y * y - z * z) / (2 * L1 * L2));
+        // jointCmdPos(legNum, 0) = atan2(factor_x * x, sqrt((L1 + factor_0 * sin(jointCmdPos(legNum, 2)) * L2) * (L1 + factor_0 * sin(jointCmdPos(legNum, 2)) * L2) + (cos(jointCmdPos(legNum, 2)) * L2) * (cos(jointCmdPos(legNum, 2)) * L2) - x * x)) + factor_0 * atan2(cos(jointCmdPos(legNum, 2)) * L2, L1 + factor_0 * L2 * sin(jointCmdPos(legNum, 2)));
+        if(m_sName == LF || m_sName==RF){
+         jointCmdPos(0, 0) = atan2(factor_z * z, factor_y * y) + factor_1 * atan2(L3, sqrt(z * z + y * y - L3 * L3));
+         jointCmdPos(2, 0) = factor_2 * asin((L1 * L1 + L2 * L2 + L3 * L3 - x * x - y * y - z * z) / (2 * L1 * L2));
+         jointCmdPos(1, 0) = atan2(factor_x * x, sqrt((L1 + factor_0 * sin(jointCmdPos(2, 0)) * L2) * (L1 + factor_0 * sin(jointCmdPos(2, 0)) * L2) + (cos(jointCmdPos(2, 0)) * L2) * (cos(jointCmdPos(2, 0)) * L2) - x * x)) + factor_0 * atan2(cos(jointCmdPos(2, 0)) * L2, L1 + factor_0 * L2 * sin(jointCmdPos(2, 0)));
+        }
+        else{
+            if(m_sName==LH){
+         float temp[3];
+         temp[0]=x;
+         temp[1]=y;
+         temp[2]=z;
+         x=temp[1];
+         y=-temp[2];
+         z=temp[0];
+        //  jointCmdPos(0, 0)=atan2(L3+y,x);
+        //  float c1=cos(jointCmdPos(0, 0)),s1=sin(jointCmdPos(0, 0));
+        //  jointCmdPos(2, 0)=atan2(L3*s1,L2)-atan2((x*x+y*y+z*z-(L1 * L1 + L2 * L2 + L3 * L3))/(2*L1),-sqrt((L3*s1)*(L3*s1)+L2*L2-((x*x+y*y+z*z-(L1 * L1 + L2 * L2 + L3 * L3))/(2*L1))*((x*x+y*y+z*z-(L1 * L1 + L2 * L2 + L3 * L3))/(2*L1))));
+        //  float c3=cos(jointCmdPos(2, 0)),s3=sin(jointCmdPos(2, 0));
+        //  jointCmdPos(1, 0)=atan2(-L2*c3-L3*s1*s3,L1-L2*s3+L3*s1*s3)-atan2(z,sqrt((-L2*c3-L3*s1*s3)*(-L2*c3-L3*s1*s3)+(L1-L2*s3+L3*c1*c3)*(L1-L2*s3+L3*c1*c3)-z*z));
+         jointCmdPos(0, 0)=atan2(L3-y,x);
+         float c1=cos(jointCmdPos(0, 0)),s1=sin(jointCmdPos(0, 0));
+         jointCmdPos(2, 0)=atan2(L3*s1,L2)-atan2((-(x*x+y*y+z*z)+(L1 * L1 + L2 * L2 + L3 * L3))/(2*L1),sqrt((L3*s1)*(L3*s1)+L2*L2-((-(x*x+y*y+z*z)+(L1 * L1 + L2 * L2 + L3 * L3))/(2*L1))*((-(x*x+y*y+z*z)+(L1 * L1 + L2 * L2 + L3 * L3))/(2*L1))));
+         //jointCmdPos(2, 0)=-jointCmdPos(2, 0);
+         float c3=cos(jointCmdPos(2, 0)),s3=sin(jointCmdPos(2, 0));
+         jointCmdPos(1, 0)=atan2(L2*c3+L3*s1*s3,L1+L2*s3-L3*s1*s3)-atan2(-z,sqrt((L2*c3+L3*s1*s3)*(L2*c3+L3*s1*s3)+(L1+L2*s3-L3*s1)*(L1+L2*s3-L3*s1)-z*z));   
+         jointCmdPos(1, 0)=-jointCmdPos(1, 0);
+            }
+            if(m_sName==RH){
+        float temp[3];
+         temp[0]=x;
+         temp[1]=y;
+         temp[2]=z;
+         x=-temp[1];
+         y=temp[2];
+         z=temp[0];
+        //  jointCmdPos(0, 0)=atan2(L3-y,x);
+        //  float c1=cos(jointCmdPos(0, 0)),s1=sin(jointCmdPos(0, 0));
+        //  jointCmdPos(2, 0)=atan2(L3*s1,L2)-atan2((-(x*x+y*y+z*z)+(L1 * L1 + L2 * L2 + L3 * L3))/(2*L1),sqrt((L3*s1)*(L3*s1)+L2*L2-((-(x*x+y*y+z*z)+(L1 * L1 + L2 * L2 + L3 * L3))/(2*L1))*((-(x*x+y*y+z*z)+(L1 * L1 + L2 * L2 + L3 * L3))/(2*L1))));
+        //  float c3=cos(jointCmdPos(2, 0)),s3=sin(jointCmdPos(2, 0));
+        //  jointCmdPos(1, 0)=atan2(L2*c3+L3*s1*s3,L1+L2*s3-L3*s1*s3)-atan2(-z,sqrt((L2*c3+L3*s1*s3)*(L2*c3+L3*s1*s3)+(L1+L2*s3-L3*c1*c3)*(L1+L2*s3-L3*c1*c3)-z*z));       
+         jointCmdPos(0, 0)=-atan2(L3+y,x);
+         float c1=cos(jointCmdPos(0, 0)),s1=sin(jointCmdPos(0, 0));
+         jointCmdPos(2, 0)=atan2(L3*s1,L2)-atan2((x*x+y*y+z*z-(L1 * L1 + L2 * L2 + L3 * L3))/(2*L1),sqrt((L3*s1)*(L3*s1)+L2*L2-((x*x+y*y+z*z-(L1 * L1 + L2 * L2 + L3 * L3))/(2*L1))*((x*x+y*y+z*z-(L1 * L1 + L2 * L2 + L3 * L3))/(2*L1))));
+         float c3=cos(jointCmdPos(2, 0)),s3=sin(jointCmdPos(2, 0));
+         jointCmdPos(1, 0)=atan2(-L2*c3-L3*s1*s3,L1-L2*s3+L3*s1*s3)-atan2(z,sqrt((-L2*c3-L3*s1*s3)*(-L2*c3-L3*s1*s3)+(L1-L2*s3+L3*s1)*(L1-L2*s3+L3*s1)-z*z));
+        jointCmdPos(1, 0)=-jointCmdPos(1, 0); 
+            }
+        }
+      
+        return jointCmdPos;
+         
     
 }
-

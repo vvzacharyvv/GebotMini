@@ -188,15 +188,18 @@ void *robotStateUpdateSend(void *data)
     rbt.SetPhase(TimePeriod, TimeForGaitPeriod, TimeForSwingPhase);
 
 #if(INIMODE==2)
-//    float  float_initPos[12]={    60, 60, -30,
-//                                  60,-60, -30,
-//                                 -60, 60, -30,
-//                                 -60,-60, -30};
+   float  float_initPos[12]={   70.0,65.5,-21.0,
+                                70.0,-65.5,-21.0,
+                               -84.0, 65.5,-21.0,
+                               -84.0, -65.5,-21.0};
 // 60, 60, -30,
 // 60,-60, -30,
 // -60, 60, -30,
 // -60,-60, -30,
-
+// 65.5,70.0,21.0,
+// 65.5,70.0,21.0,
+// 65.5,84.0,21.0,
+// 65.5,84.0,21.0
 //  80,  50, -22,
 //  80, -50, -22,
 // -40,  50, -22,
@@ -206,8 +209,8 @@ void *robotStateUpdateSend(void *data)
 //  80, -55, -16,
 // -40,  55, -16,
 // -40, -69, -18,
-   float  float_initPos[12];
-   string2float("../include/initPos.csv", float_initPos);//Foot end position
+//    float  float_initPos[12];
+//    string2float("../include/initPos.csv", float_initPos);//Foot end position
     for(int i=0; i<4; i++)
         for(int j=0;j<3;j++)
         {
@@ -224,6 +227,7 @@ void *robotStateUpdateSend(void *data)
   
 #if(INIMODE==2)  
     rbt.SetPos(rbt.mfJointCmdPos);
+    cout<<"rbt.mfJointCmdPos:"<<rbt.mfJointCmdPos<<endl;
     
 #endif
     usleep(1e5);
@@ -243,10 +247,12 @@ void *robotStateUpdateSend(void *data)
             //If stay static, annotate below one line.
             
             rbt.NextStep();
+            cout<<"rbt.mfLegCmdPos:"<<rbt.mfLegCmdPos<<endl;
+            
             rbt.AirControl();
             // rbt.AttitudeCorrection90();
             
-            rbt.ParaDeliver();
+           // rbt.ParaDeliver();
             
             // rbt.UpdateImuData();     // segmentation fault
             //cout<<"LegCmdPos:\n"<<rbt.mfLegCmdPos<<endl;    
@@ -308,7 +314,7 @@ void *runImpCtller(void *data)
              rbt.InverseKinematics(rbt.mfLegCmdPos); 
 
 
-            // cout<<"mfJointCmdPos:"<<rbt.mfJointCmdPos;
+             cout<<"mfJointCmdPos:"<<rbt.mfJointCmdPos<<endl;
             // cout<<"mfLegCmdPos: \n"<<rbt.mfLegCmdPos<<endl;
             // cout<<"target_pos: \n"<<rbt.mfTargetPos<<endl;
             // cout<<"legPresPos: \n"<<rbt.mfLegPresPos<<"; \nxc: \n"<<rbt.xc<<endl;
@@ -409,18 +415,18 @@ int main(int argc, char ** argv)
 		printf("create pthread4 error!\n");
 		exit(1);
 	}
-     ret = pthread_create(&th5,NULL,SvUpdate,NULL);
-    if(ret != 0)
-	{
-		printf("create pthread4 error!\n");
-		exit(1);
-	}
+    //  ret = pthread_create(&th5,NULL,SvUpdate,NULL);
+    // if(ret != 0)
+	// {
+	// 	printf("create pthread4 error!\n");
+	// 	exit(1);
+	// }
     
     pthread_join(th1, NULL);
     pthread_join(th2, NULL);
     pthread_join(th3, NULL);
     pthread_join(th4, NULL);
-    pthread_join(th5, NULL);
+   // pthread_join(th5, NULL);
     while(1);
 
     

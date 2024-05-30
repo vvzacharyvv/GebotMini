@@ -286,7 +286,7 @@ void CRobotControl::CalVmcCom()
     vfPresentCoMVelocity.block(0,0,3,1)=-stanceAccumlate/stanceUsefulCount;
     vfLastCoMVelocity.block(0,0,3,1)= vfPresentCoMVelocity.block(0,0,3,1);
     }
-    cout<<" vfPresentCoMVelocity: "<< vfPresentCoMVelocity.block(0,0,3,1)<<endl;
+    //cout<<" vfPresentCoMVelocity: "<< vfPresentCoMVelocity.block(0,0,3,1)<<endl;
     // cout<<"mfLegPresVel:"<<mfLegPresVel<<endl;
     //  cout<<"mfLegLastVel:"<<mfLegLastVel<<endl;
     //   cout<<"stanceAccumlate:"<<stanceAccumlate<<endl;
@@ -306,7 +306,7 @@ void CRobotControl::CalVmcCom()
 
     vfVmcb61<<m_fMass*(vfVmcAccDCom+vfGravity),m_fIxx*vfVmcAngelAccDBase[0],m_fIyy*vfVmcAngelAccDBase[1],m_fIzz*vfVmcAngelAccDBase[2];
     // cout<<"m_fMass:"<<m_fMass<<endl;
-    cout<<"vfVmcAccDCom:"<<vfVmcAccDCom<<endl;
+    //cout<<"vfVmcAccDCom:"<<vfVmcAccDCom<<endl;
     //cout<<"vfGravity:"<<vfGravity<<endl;
 
     int k=3*stanceCount;
