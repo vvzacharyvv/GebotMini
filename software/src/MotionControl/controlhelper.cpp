@@ -65,9 +65,10 @@ vector<float> motorMapping(Matrix<float, 4, 3> jointCmdPos)
     motorPos[7]=jointCmdPos(2,1)+jointCmdPos(2,0);
     motorPos[9]=jointCmdPos(3,1)-jointCmdPos(3,0);
     motorPos[10]=jointCmdPos(3,1)+jointCmdPos(3,0);
-    for(int i=0;i<4;i++)
+    for(int i=0;i<2;i++)
     motorPos[i*3+2]=jointCmdPos(i,2);
-
+    motorPos[8]=-jointCmdPos(2,2);
+    motorPos[11]=-jointCmdPos(3,2);
     return motorPos;
 };
 
@@ -106,4 +107,42 @@ bool commandJudge(char *P, char *T)
     if(ret>=strlen(T)) return false;
     else if(ret<0){cout<<"match error"<<endl; return false;}
     else return true; 
+}
+
+void SetPos(Matrix<float,4,3> jointCmdPos,DxlAPI& motors,vector<float>& vLastSetPos)
+{
+    vector<float> setPos;
+    setPos=motorMapping(jointCmdPos);
+    setPos.resize(16);
+    for(int i = 0;i< 4 ;i++)
+    setPos[i+12]=jointCmdPos(i,0);
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            int index = i * 3 + j;
+            if (isnan(setPos[index])) {
+                setPos[index] = vLastSetPos[index]; // Use last position if NaN
+                cout << "-------------motor_angle_" << index << " NAN-----------" << endl;
+                exit(0);
+            } else {
+                float delta = setPos[index] - vLastSetPos[index];
+                if (delta > MORTOR_ANGLE_AMP) {
+                    vLastSetPos[index] += MORTOR_ANGLE_AMP;
+                    cout << "-------------motor_angle_" << index << " +MAX-----------" << endl;
+                } else if (delta < -MORTOR_ANGLE_AMP) {
+                    vLastSetPos[index] -= MORTOR_ANGLE_AMP;
+                    cout << "-------------motor_angle_" << index << " -MAX-----------" << endl;
+                } else {
+                    vLastSetPos[index] = setPos[index]; // Update to current position
+                }
+            }
+        }
+    }
+
+    // Ensure to set the last 4 positions correctly
+    for (int i = 12; i < 16; ++i) {
+        vLastSetPos[i] = setPos[i];
+    }
+
+    motors.setPosition(vLastSetPos);
+ 
 }

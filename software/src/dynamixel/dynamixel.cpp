@@ -91,7 +91,7 @@ DxlAPI::~DxlAPI()
 }
  void DxlAPI::init(char *port, int baudrate_set, vector<int> ids, uint8_t type)
  {
- BAUDRATE = baudrate_set;
+    BAUDRATE = baudrate_set;
     PORT_NAME = port;
     MOTOR_TYPE = type;
     ID.clear();

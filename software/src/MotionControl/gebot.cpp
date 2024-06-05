@@ -1,10 +1,10 @@
 #include "gebot.h"
 
 
-
+bool swingtimeFlag = false;
 CGebot::CGebot(float length,float width,float height,float mass)
 {
-    dxlMotors.init("/dev/ttyAMA0", 1000000, ID, 2);  // CAN NOT 4M.   ttyUSB0 ttyAMA0      
+    //dxlMotors.init("/dev/ttyAMA0", 1000000, ID, 2);  // CAN NOT 4M.   ttyUSB0 ttyAMA0      
     m_glLeg[0] = new CLeg(LF,65.5,70.0,21.0);  // mm
     m_glLeg[1] = new CLeg(RF,65.5,70.0,21.0);
     m_glLeg[2] = new CLeg(LH,65.5,84.0,21.0);
@@ -31,7 +31,8 @@ CGebot::CGebot(float length,float width,float height,float mass)
     // fSwingPhaseStatusPart[3]=0.3; //attach
     fStancePhaseStatusPart[0]=0.1;//recover  
     fStancePhaseStatusPart[1]=0.9;//stance
-
+    mfSwingVelocity.setZero();
+    targetCoMPosture.setZero();
     BSwingPhaseStartFlag = true;
     autoControlFlag=true;
     BSwingPhaseEndFlag = 0;     //
@@ -43,14 +44,14 @@ CGebot::CGebot(float length,float width,float height,float mass)
     fTimePresent=0.0;
     mfTimePresentForSwing.setZero();
     vfTargetCoMVelocity.setZero();
-    dxlMotors.setOperatingMode(3);  //3 position control; 0 current control
+    //dxlMotors.setOperatingMode(3);  //3 position control; 0 current control
     usleep(500);
-    dxlMotors.torqueEnable();
-     dxlMotors.getPosition();
-    api.setPump(1, LOW);//LF
-    api.setPump(24, LOW);//RF
-    api.setPump(28, LOW);//LH
-    api.setPump(29, LOW);//RH
+   // dxlMotors.torqueEnable();
+    //dxlMotors.getPosition();
+    // api.setPump(1, LOW);//LF
+    // api.setPump(24, LOW);//RF
+    // api.setPump(28, LOW);//LH
+    // api.setPump(29, LOW);//RH
     // api.setPump(1, HIGH);//LF
     // api.setPump(24, HIGH);//RF
     // api.setPump(28, HIGH);//LH
@@ -136,6 +137,7 @@ void CGebot::SetPhase(float tP, float tFGP, Matrix<float,4,2> tFSP)
             }
         }
     }  
+
 }
 
 /**
@@ -184,6 +186,7 @@ void CGebot::UpdateLegStatus(int legNum)
                 probeTrigger[legNum]=true;
             }
             else{
+            swingtimeFlag=true;
             m_glLeg[legNum]->ChangeStatus(recover);
             iStatusCounter[legNum] = iStatusCounterBuffer[legNum][int(recover)];
             mfStancePhaseStartPos(legNum) = mfLegCmdPos(legNum);
@@ -278,7 +281,7 @@ void CGebot::InertiaInit()
  * set  Vel of X,Y,alpha in world cordinate
  */
 void CGebot::SetCoMVel(Matrix<float, 6,1> tCV)
-{
+{   
     vfTargetCoMVelocity = tCV;
 }
 
@@ -291,7 +294,7 @@ void CGebot::SetCoMVel(Matrix<float, 6,1> tCV)
  */
 void CGebot::UpdatejointPresPosAndVel()
 {
-    mfJointPresPos=inverseMotorMapping(dxlMotors.present_position);
+   // mfJointPresPos=inverseMotorMapping(dxlMotors.present_position);
     // cout<<"mfJointPresPos: " <<mfJointPresPos<<endl;
     // cout<<"mfJointLastPos: " <<mfJointLastPos<<endl;
     for(int legNum=0;legNum<4;legNum++)
@@ -313,12 +316,12 @@ void CGebot::UpdatejointPresPosAndVel()
  */
 void CGebot::UpdatejointPresVel()
 {
-    mfJointPresVel=inverseMotorMapping(dxlMotors.present_velocity);    
+    //mfJointPresVel=inverseMotorMapping(dxlMotors.present_velocity);    
     //cout<<"dxlMotors.present_velocity:  ";
-    for(size_t i=0;i<dxlMotors.present_velocity.size();i++)   
-    {
-       // cout<<dxlMotors.present_velocity[i]<<" ";
-    }
+    // for(size_t i=0;i<dxlMotors.present_velocity.size();i++)   
+    // {
+    //    // cout<<dxlMotors.present_velocity[i]<<" ";
+    // }
    // cout<<endl;
     //cout<<"mfJointPresVel:\n"<<mfJointPresVel<<endl;
 }
@@ -389,7 +392,7 @@ void CGebot::NextStep()
         {
             // cout<<"swing-"<<(unsigned)legNum<<endl;
             float x, xh, m, n, k;
-            if(mfSwingVelocity( 0, 0) == 0)      //first step
+            if(mfSwingVelocity(0, 0) == 0)      //first step
             {
                 mfLegCmdPos(legNum, 2) += fStepHeight / (iStatusCounterBuffer[legNum][(int)detach] + iStatusCounterBuffer[legNum][(int)swingUp]);
                 
@@ -468,47 +471,7 @@ void CGebot::InverseKinematics(Matrix<float, 4, 3> cmdpos)
 }
 
 //motor control;
- void CGebot::SetPos(Matrix<float,4,3> jointCmdPos)
-{
-    vector<float> setPos;
-    setPos=motorMapping(jointCmdPos);
-    for(int i =0;i<4;i++)
-    setPos.emplace_back(jointCmdPos(i,1));
-    for(int i=0; i<4; i++)  
-            for(int j=0;j<3;j++)
-            {
-                if( isnanf(setPos[i*3+j]))         
-                {
-                    setPos[i*3+j] = vLastSetPos[i*3+j];   // last
-                    cout<<"-------------motor_angle_"<<i*3+j<<" NAN-----------"<<endl;
-                    // cout<<"target_pos: \n"<<imp.target_pos<<"; \nxc: \n"<<imp.xc<<endl;
-                    exit(0);
-                }
-                else
-                {
-                    if(setPos[i*3+j] - vLastSetPos[i*3+j] > MORTOR_ANGLE_AMP)
-                    {
-                        vLastSetPos[i*3+j] += MORTOR_ANGLE_AMP;
-                        cout<<"-------------motor_angle_"<<i*3+j<<" +MAX-----------"<<endl;
-                    }
-                    else if(setPos[i*3+j] - vLastSetPos[i*3+j] < -MORTOR_ANGLE_AMP)
-                    {
-                        vLastSetPos[i*3+j] -= MORTOR_ANGLE_AMP;
-                        cout<<"-------------motor_angle_"<<i*3+j<<" -MAX-----------"<<endl;
-                    }
-                    else {
-                            vLastSetPos[i*3+j] = setPos[i*3+j];   // now
-                            for(int i=12;i<16;i++)
-                            vLastSetPos[i*3+j] = setPos[i*3+j]; 
-                    }
-                        
-                }
-                //cout<<"motor_angle_"<<i*3+j<<": "<<SetPos[i*3+j]<<"  ";
-            }   
-    dxlMotors.setPosition(vLastSetPos); 
  
-}
-
 
 
 

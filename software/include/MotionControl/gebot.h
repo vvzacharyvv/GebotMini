@@ -2,6 +2,7 @@
 #include "leg.h"
 using namespace Eigen;
 using namespace std;
+extern bool swingtimeFlag;
 class CGebot{
 
 public:
@@ -84,16 +85,9 @@ public:
     void PumpAllPositve();
     void PumpAllClose();
     //motor control
-    vector<int> ID = {  
-    0,1,2,
-    3, 4, 5,
-    6,7,8
-    ,9,10,11,
-    12,13,14,15
-    };
     vector<float> vLastSetPos;
-    DxlAPI dxlMotors;  //3000000  cannot hold 6 legs ttyUSB0 ttyAMA0
-    void SetPos(Matrix<float,4,3> jointCmdPos);
+    //DxlAPI dxlMotors;  //3000000  cannot hold 6 legs ttyUSB0 ttyAMA0
+    
    
     //void SetTor(vector<float> setTor);
     

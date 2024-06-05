@@ -279,7 +279,7 @@ void *runImpCtller(void *data)
     while(rbt.bInitFlag == 0) //wait for initial
         usleep(1e2);
 
-    rbt.dxlMotors.torqueEnable();
+    //rbt.dxlMotors.torqueEnable();
     while (1)
     {
         if(runFlag&&rbt.autoControlFlag)
@@ -312,9 +312,9 @@ void *runImpCtller(void *data)
 
             /*      Postion control      */
              rbt.InverseKinematics(rbt.mfLegCmdPos); 
-
-
-             cout<<"mfJointCmdPos:"<<rbt.mfJointCmdPos<<endl;
+             cout<<endl;
+             cout<<"mfLegCmdPos:\n"<<rbt.mfLegCmdPos<<endl;
+             cout<<"mfJointCmdPos:\n"<<rbt.mfJointCmdPos<<endl;
             // cout<<"mfLegCmdPos: \n"<<rbt.mfLegCmdPos<<endl;
             // cout<<"target_pos: \n"<<rbt.mfTargetPos<<endl;
             // cout<<"legPresPos: \n"<<rbt.mfLegPresPos<<"; \nxc: \n"<<rbt.xc<<endl;

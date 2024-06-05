@@ -15,11 +15,11 @@
 /* Position control */
 #define StepHeight_F  16.0/1000   //swingUp
 #define StepHeight_H  14.0/1000   //swingUp
-#define Press  0/1000  //19.0/1000        //attach press 7
-#define CompDisA1 -2/1000   // Compensation of Distance in AttitudeCorrection() with Amble gait
-#define CompDisA2 12/1000 
-#define CompDisA3 14/1000   
-#define CompDisALL 9 /1000     // Compensation of Distance  AttitudeCorrection() All stace phase
+#define Press  0/1000.0  //19.0/1000        //attach press 7
+#define CompDisA1 -2.0/1000.0   // Compensation of Distance in AttitudeCorrection() with Amble gait
+#define CompDisA2 12.0/1000.0 
+#define CompDisA3 14.0/1000.0   
+#define CompDisALL 9.0 /1000.0     // Compensation of Distance  AttitudeCorrection() All stace phase
 
 #define THREAD1_ENABLE 1
 #define THREAD2_ENABLE 1
@@ -34,7 +34,7 @@
 #define loopRateSVRead   20.0//hz
 #define VELX 6.0/1000    // mm  step length = VELX * timeForStancePhase        
 #define TimePeriod 0.05
-#define TimeForGaitPeriod 8
+#define TimeForGaitPeriod 8.0
 #define PI 3.1415926
 #define THREHOLDLF 800
 #define THREHOLDRF 800

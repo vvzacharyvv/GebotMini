@@ -70,7 +70,7 @@ void CRobotControl::UpdateFtsPresForce()
         temp.setZero();
     for(int i=0; i<3; i++)
         for(int j=0;j<4;j++)
-            temp(i ,j ) = dxlMotors.present_torque[i+j*3];
+           // temp(i ,j ) = dxlMotors.present_torque[i+j*3];
     for (int i=0; i<4; i++)
     {
         mfForce.col(i) = ForceLPF * mfLastForce.col(i) + (1-ForceLPF) * m_glLeg[i]->GetJacobian().transpose().inverse() * temp.col(i);
