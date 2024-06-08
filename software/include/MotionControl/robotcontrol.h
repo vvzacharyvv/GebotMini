@@ -21,14 +21,14 @@ public:
     Matrix<float, 4, 3> mfXcDot;
     Matrix<float, 4, 3> mfXc;
     Matrix<float, 3, 4> mfForce, mfLastForce;              // force feedback   x y z ; LF RF LH RH
-    Matrix<float, 3, 4> mfTargetTor;
+    Matrix<float, 4, 4> mfTargetTor;
     Matrix<float, 4, 3> mfKswing, mfKstance, mfKdetach, mfKattach;                     //LF RF LH RH
     Matrix<float, 4, 3> mfBwing, mfBstance, mfBdetach, mfBattach;
     Matrix<float, 4, 3> mfMswing, mfMstance, mfMdetach, mfMattach;
     float fCtlRate;
     enum_CONTROLMODE m_eControlMode;  
     void Init();
-    void UpdateFtsPresForce();
+    void UpdateFtsPresForce(vector<float> present_torque);
     void UpdateTargTor(Matrix<float, 3, 4> force);
     void ParaDeliver();
     void Control();

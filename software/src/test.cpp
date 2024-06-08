@@ -29,6 +29,7 @@ int main()
     vector<int> ID;
     vector<float> start_pos;
     vector<float> target_tor;
+
     // for(int i=0; i<4; i++)
     // {
     // ID.push_back(3*i);
@@ -67,6 +68,8 @@ int main()
     // float torque[12];
     // usleep(1e6);
      //api.setSV(svStatus);
+
+
     CRobotControl rbt(110.0,60.0,20.0,800.0,ADMITTANCE);
     Matrix<float,4,2> TimeForSwingPhase;
     Matrix<float, 4, 3> InitPos;
@@ -86,7 +89,6 @@ float  float_initPos[12]={   70.0,65.5,-21.0,
             InitPos(i, j) = float_initPos[i*3+j]/1000;
             // cout<<InitPos(i, j)<<endl;
         }
-   
     rbt.SetInitPos(InitPos);
     rbt.InverseKinematics(rbt.mfLegCmdPos);
     cout<<"cmdPos: "<<rbt.mfJointCmdPos<<endl;
@@ -99,6 +101,8 @@ float  float_initPos[12]={   70.0,65.5,-21.0,
                         12*TimeForGaitPeriod/16, 	15*TimeForGaitPeriod/16,		
                         4*TimeForGaitPeriod/16, 	7*TimeForGaitPeriod/16;
     rbt.SetPhase(TimePeriod, TimeForGaitPeriod, TimeForSwingPhase);
+
+
 //     //ADS1015 ads;
 
    
@@ -139,12 +143,16 @@ float  float_initPos[12]={   70.0,65.5,-21.0,
         // gecko.getVelocity();
         rbt.NextStep();
         rbt.InverseKinematics(rbt.mfLegCmdPos);
-        cout<<"mfLegCmdPos: \n"<<rbt.mfLegCmdPos<<"\n"<<"mfJointCmdPos: \n"<<rbt.mfJointCmdPos<<endl;
+        cout<<"mfLegCmdPos: \n"<<rbt.mfLegCmdPos<<"\n";//<<"mfJointCmdPos: \n"<<rbt.mfJointCmdPos<<endl;
+
+        rbt.UpdatejointPresPosAndVel(motorMapping(rbt.mfJointCmdPos));
+        rbt.ForwardKinematics(1);
+       // cout<<"forward: " <<rbt.mfLegPresPos<<endl;
         // cout<<" present postion: ";
         // for(int i=0;i<16;i++)
         //         cout<<gecko.present_position[i]<<" ";
         // cout<<endl;
-       // SetPos(rbt.mfJointCmdPos,gecko,rbt.vLastSetPos);
+        SetPos(rbt.mfJointCmdPos,gecko,rbt.vLastSetPos);
         gettimeofday(&endTime,NULL);
         timeUse = 1e6*(endTime.tv_sec - startTime.tv_sec) + endTime.tv_usec - startTime.tv_usec;
         if(timeUse < 1.0/loopRateStateUpdateSend*1e6)

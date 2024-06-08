@@ -63,17 +63,17 @@ void CRobotControl::UpdateImuData()
     
 }
 
-void CRobotControl::UpdateFtsPresForce()
+void CRobotControl::UpdateFtsPresForce(vector<float> present_torque)
 {
-    Matrix<float, 3, 4> temp;
+    Matrix<float, 4, 4> temp;
     if(mfForce(2,3) - mfLastForce(2,3) > 0.3 || mfForce(2,3) - mfLastForce(2,3) < -0.3)
         temp.setZero();
-    for(int i=0; i<3; i++)
+    for(int i=0; i<4; i++)
         for(int j=0;j<4;j++)
-           // temp(i ,j ) = dxlMotors.present_torque[i+j*3];
+            temp(i ,j ) = present_torque[i+j*4];
     for (int i=0; i<4; i++)
     {
-        mfForce.col(i) = ForceLPF * mfLastForce.col(i) + (1-ForceLPF) * m_glLeg[i]->GetJacobian().transpose().inverse() * temp.col(i);
+        mfForce.col(i) = ForceLPF * mfLastForce.col(i) + (1-ForceLPF) *pinv(m_glLeg[i]->GetJacobian().transpose(),8e-6) * temp.col(i);
         // cout<<m_glLeg[i]->GetJacobian().transpose().inverse() <<" ";
     }  
     mfLastForce = mfForce;
@@ -82,7 +82,7 @@ void CRobotControl::UpdateFtsPresForce()
 void CRobotControl::UpdateTargTor(Matrix<float, 3, 4> force)
 {
     for (int legNum=0; legNum<4; legNum++)
-        mfTargetTor.col(legNum) = m_glLeg[legNum]->GetJacobian() * force.col(legNum); 
+        mfTargetTor.col(legNum) = m_glLeg[legNum]->GetJacobian().transpose() * force.col(legNum); 
 }
 
 /**

@@ -2,6 +2,7 @@
 #include "ADS1x15.h"
 #define CHECK_RET(q) if((q)==false){return 0;}
 CRobotControl rbt(110.0,60.0,20.0,800.0,ADMITTANCE);
+DxlAPI motors("/dev/ttyAMA0", 1000000, ID, 2);
 bool runFlag=0;
 float torque[12];
 
@@ -226,7 +227,7 @@ void *robotStateUpdateSend(void *data)
     rbt.mfTargetPos = rbt.mfLegCmdPos;
   
 #if(INIMODE==2)  
-    rbt.SetPos(rbt.mfJointCmdPos);
+    SetPos(rbt.mfJointCmdPos,motors,rbt.vLastSetPos);
     cout<<"rbt.mfJointCmdPos:"<<rbt.mfJointCmdPos<<endl;
     
 #endif
@@ -286,17 +287,17 @@ void *runImpCtller(void *data)
         {
             gettimeofday(&startTime,NULL);
             /* get motors data  */
-            rbt.dxlMotors.getTorque();
-            rbt.dxlMotors.getPosition();
-            rbt.dxlMotors.getVelocity();
+            motors.getTorque();
+            motors.getPosition();
+            motors.getVelocity();
 
             /* update the data IMP need */
-            rbt.UpdatejointPresPosAndVel();         
+            rbt.UpdatejointPresPosAndVel(motors.present_position);         
             //rbt.UpdatejointPresVel(); //useless,wrong data
             rbt.ForwardKinematics(1);
             rbt.UpdateJacobians();
-            rbt.UpdateFtsPresVel();
-            rbt.UpdateFtsPresForce();  
+           // rbt.UpdateFtsPresVel();
+            rbt.UpdateFtsPresForce(motors.present_torque);  
             // for (size_t i = 0; i < 12; i++)
             // {
             //     torque[i] = rbt.dxlMotors.present_torque[i];
@@ -323,7 +324,7 @@ void *runImpCtller(void *data)
             // cout<<endl;
 
             /*      Set joint angle      */
-           rbt.SetPos(rbt.mfJointCmdPos);
+            SetPos(rbt.mfJointCmdPos,motors,rbt.vLastSetPos);
 
             /*      Impedance control      */
             // for(int i=0; i<4; i++)  

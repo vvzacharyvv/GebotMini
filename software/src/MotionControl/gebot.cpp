@@ -207,8 +207,8 @@ void CGebot::UpdateLegStatus(int legNum)
             break;
         case recover:
             m_glLeg[legNum]->ChangeStatus(stance);
+            iStatusCounter[legNum] = iStatusCounterBuffer[legNum][int(stance)]-attchDis[legNum];
             attchDis[legNum]=0;
-            iStatusCounter[legNum] = iStatusCounterBuffer[legNum][int(stance)];
             break;
         case stance:
             m_glLeg[legNum]->ChangeStatus(detach);
@@ -292,14 +292,15 @@ void CGebot::SetCoMVel(Matrix<float, 6,1> tCV)
  * @param jointPos 
  * put (vector)jointPos[12] into (Matrix)jointPresPos(4,3)
  */
-void CGebot::UpdatejointPresPosAndVel()
+void CGebot::UpdatejointPresPosAndVel(vector<float> present_position)
 {
-   // mfJointPresPos=inverseMotorMapping(dxlMotors.present_position);
+     mfJointPresPos=inverseMotorMapping(present_position);
+
     // cout<<"mfJointPresPos: " <<mfJointPresPos<<endl;
     // cout<<"mfJointLastPos: " <<mfJointLastPos<<endl;
     for(int legNum=0;legNum<4;legNum++)
     {   
-        Matrix<float,3,1> temp=mfJointPresPos.block(legNum,0,1,3).transpose();
+        Matrix<float,4,1> temp=mfJointPresPos.block(legNum,0,1,4).transpose();
         m_glLeg[legNum]->SetJointPos(temp);
     }
 
@@ -338,13 +339,13 @@ void CGebot::UpdateJacobians()
  */
 void CGebot::UpdateFtsPresVel()
 {
-    mfLegLastVel=mfLegPresVel;
-    Matrix <float, 3, 1> temp_vel;
-    for(int i=0; i<4; i++)
-    {
-        temp_vel = m_glLeg[i]->GetJacobian() * mfJointPresVel.row(i).transpose();
-        mfLegPresVel.row(i) = temp_vel.transpose();
-    }
+    // mfLegLastVel=mfLegPresVel;
+    // Matrix <float, 3, 1> temp_vel;
+    // for(int i=0; i<4; i++)
+    // {
+    //     temp_vel = m_glLeg[i]->GetJacobian() * mfJointPresVel.row(i).transpose();
+    //     mfLegPresVel.row(i) = temp_vel.transpose();
+    // }
     
 }
 void CGebot::NextStep()
@@ -365,12 +366,12 @@ void CGebot::NextStep()
             fStepHeight = StepHeight_H;
         
         // cout<<"leg_"<<(int)legNum<<"_status: "<<(int)ls<<endl;
-        if( ls == stance ) //stance phase
+        if( ls == stance || ls == recover) //stance phase
         {     
-            for(uint8_t pos=0; pos<3; pos++)
+            for(int pos=0; pos<3; pos++)
             {
-                targetCoMPosition(legNum, pos) += vfTargetCoMVelocity(pos) * fTimePeriod;
-                targetCoMPosture(legNum,pos) +=vfTargetCoMVelocity(pos+3)*fTimePeriod;
+                targetCoMPosition(legNum, pos) += vfTargetCoMVelocity(pos,0)*fTimePeriod;
+                targetCoMPosture(legNum,pos) +=vfTargetCoMVelocity(pos+3,0)*fTimePeriod;
             }
             Matrix<float, 4, 4> trans;
             trans<<cos(targetCoMPosture(legNum,2)), -sin(targetCoMPosture(legNum,2)),0, targetCoMPosition(legNum,0),
@@ -380,12 +381,17 @@ void CGebot::NextStep()
             Matrix<float, 4, 1> oneShoulderPos_4x1;
             oneShoulderPos_4x1<<mfShoulderPos(legNum,0), mfShoulderPos(legNum,1),0,1;
             oneShoulderPos_4x1 = trans * oneShoulderPos_4x1;
-            for (size_t i = 0; i < 3; i++)
-            {
+            if(ls==stance)
+             for (size_t i = 0; i < 3; i++)
                 mfLegCmdPos(legNum, i) = mfStancePhaseStartPos(legNum, i) + (mfShoulderPos(legNum, i) - oneShoulderPos_4x1(i));
                 //  cout<<"mfStancePhaseStartPos(legNum, i): \n"<<mfStancePhaseStartPos(legNum, i)<<endl;
                 //  cout<<"oneShoulderPos_3x1("<<i<<")"<<oneShoulderPos_4x1(i)<<endl;
                 //  cout<<"mfShoulderPos(legNum,"<<i<<")"<<mfShoulderPos(legNum, i)<<endl;
+            else if(ls == recover){
+                for (size_t i = 0; i < 3; i++)
+                    mfLegCmdPos(legNum, i) = mfStancePhaseStartPos(legNum, i) + (mfShoulderPos(legNum, i) - oneShoulderPos_4x1(i));
+                mfLegCmdPos(legNum, 2) +=  attchDis[legNum] / iStatusCounterBuffer[legNum][(int)ls];
+
             }
         }
         else if( ls == detach || ls == swingUp )   //swing phase 
@@ -427,13 +433,15 @@ void CGebot::NextStep()
         }
         else if( ls == attach )    //swing phase
         {
+            mfLegCmdPos(legNum, 0) -=vfTargetCoMVelocity(0,0)*fTimePeriod; // make x y stationary to ground;
+            mfLegCmdPos(legNum, 1) -=vfTargetCoMVelocity(1,0)*fTimePeriod;
             mfLegCmdPos(legNum, 2) -=  ATTACHDIS_MAX/ATTACH_TIMES;
             attchDis[legNum]+=ATTACHDIS_MAX/ATTACH_TIMES;
         }
-        else if( ls == recover )   //stance phase
-        {   // mfLegCmdPos(legNum, 2)  is not related to mfStancePhaseEndPos(legNum, 2) and mfStartPhaseEndPos(legNum, 2)
-            mfLegCmdPos(legNum, 2) +=  attchDis[legNum] / iStatusCounterBuffer[legNum][(int)ls];
-        }
+        // else if( ls == recover )   //stance phase
+        // {   // mfLegCmdPos(legNum, 2)  is not related to mfStancePhaseEndPos(legNum, 2) and mfStartPhaseEndPos(legNum, 2)
+        //     mfLegCmdPos(legNum, 2) +=  attchDis[legNum] / iStatusCounterBuffer[legNum][(int)ls];
+        // }
         //cout<<"legNum_"<<(int)legNum<<":"<<stepFlag[legNum]<<"  ";
     }
    

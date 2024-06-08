@@ -54,20 +54,22 @@ public:
     Matrix<float, 4, 3> mfLegPresVel;  // present velocity of foot  in shoulder coordinate, in order LF, RF, LH, RH; X-Y-Z
     Matrix<float, 4, 3> mfLegLastVel;   //last velocity of foot to shoulder,for filter
     Matrix<float, 4, 3> mfJointCmdPos;  // command joint angle 0-11
-    Matrix<float, 4, 3> mfJointPresPos;  // present motor 0-11
-    Matrix<float, 4, 3> mfJointLastPos;  // present motor 0-11
-    Matrix<float, 4, 3> mfJointPresVel;  // present motor 0-11
-    Matrix<float, 4, 3> mfJointCmdVel; 
+    Matrix<float, 4, 4> mfJointPresPos;  // present motor 0-16
+    Matrix<float, 4, 4> mfJointLastPos;  // present motor 0-16
+    Matrix<float, 4, 4> mfJointPresVel;  // present motor 0-16
+    Matrix<float, 4, 4> mfJointCmdVel; 
     Matrix<float, 1, 3> mfSwingVelocity;
     Matrix<float, 4, 3> mfJointCompDis;  // compensation joint angle
-   
+    Matrix<float, 4, 3> mfCompensation;
+    bool BSwingPhaseStartFlag, BSwingPhaseEndFlag;
+    vector<float> vLastSetPos;
     CGebot(float length,float width,float height,float mass);
     void SetInitPos(Matrix<float, 4, 3> initPosition);
     void InertiaInit();
     void SetCoMVel(Matrix<float, 6,1> tCV);   
     void SetPhase(float tP, float tFGP, Matrix<float, 4, 2> tFSP);
     void NextStep();
-    void UpdatejointPresPosAndVel();
+    void UpdatejointPresPosAndVel(vector<float> present_position);
     void UpdatejointPresVel();
     void UpdateJacobians();
     void ForwardKinematics(int mode);
@@ -76,8 +78,8 @@ public:
     void UpdateTouchStatus(vector<int> values,vector<int> prevalues,vector<int> preprevalues);
     //robot control
     //pump control
-    uint8_t svStatus=0b00000000;
-    API api;
+     uint8_t svStatus=0b00000000;
+     API api;
     void AirControl();
     void PumpNegtive(int legNum);
     void PumpPositive(int legNum);
@@ -85,7 +87,7 @@ public:
     void PumpAllPositve();
     void PumpAllClose();
     //motor control
-    vector<float> vLastSetPos;
+     
     //DxlAPI dxlMotors;  //3000000  cannot hold 6 legs ttyUSB0 ttyAMA0
     
    
@@ -94,7 +96,7 @@ public:
     void UpdateLegStatus(int legNum);
     void AttitudeCorrection180();
     void AttitudeCorrection90();
-    bool BSwingPhaseStartFlag, BSwingPhaseEndFlag;
-    Matrix<float, 4, 3> mfCompensation;
+     
+    
 
 };

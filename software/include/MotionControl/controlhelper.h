@@ -10,7 +10,8 @@ enum enum_CONTROLMODE{ADMITTANCE,IMPEDANCE};
 void string2float(std::string add, float* dest);
 void printSvStatus(unsigned char svStatus);
 vector<float> motorMapping(Matrix<float,4,3> jointCmdPos);
-Matrix<float,4,3> inverseMotorMapping(vector<float> motorPos);
+Matrix<float,4,4> inverseMotorMapping(vector<float> motorPos);
+MatrixXf pinv(Eigen::MatrixXf  A,float pinvtoler);
 void SetPos(Matrix<float,4,3> jointCmdPos,DxlAPI& motors,vector<float>& vLastSetPos);
 /*************command match help**************/
 int match(char *P,char *T);
