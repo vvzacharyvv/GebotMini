@@ -44,14 +44,10 @@ CGebot::CGebot(float length,float width,float height,float mass)
     fTimePresent=0.0;
     mfTimePresentForSwing.setZero();
     vfTargetCoMVelocity.setZero();
-    //dxlMotors.setOperatingMode(3);  //3 position control; 0 current control
-    usleep(500);
-   // dxlMotors.torqueEnable();
-    //dxlMotors.getPosition();
-    // api.setPump(1, LOW);//LF
-    // api.setPump(24, LOW);//RF
-    // api.setPump(28, LOW);//LH
-    // api.setPump(29, LOW);//RH
+     api.setPump(1, LOW);//LF
+     api.setPump(24, LOW);//RF
+     api.setPump(28, LOW);//LH
+     api.setPump(29, LOW);//RH
     // api.setPump(1, HIGH);//LF
     // api.setPump(24, HIGH);//RF
     // api.setPump(28, HIGH);//LH
@@ -186,7 +182,6 @@ void CGebot::UpdateLegStatus(int legNum)
                 probeTrigger[legNum]=true;
             }
             else{
-            swingtimeFlag=true;
             m_glLeg[legNum]->ChangeStatus(recover);
             iStatusCounter[legNum] = iStatusCounterBuffer[legNum][int(recover)];
             mfStancePhaseStartPos(legNum) = mfLegCmdPos(legNum);
@@ -722,9 +717,12 @@ void CGebot::AttitudeCorrection90()
 
 }
 void CGebot::UpdateTouchStatus(vector<int> values,vector<int> prevalues,vector<int> preprevalues){
+    for(auto a:values)
+    cout<<a<<" ";
+    cout<<endl;
     for(int i=0;i<4;i++){
-    if(preprevalues[i]>m_threhold[i])
-        if(prevalues[i]>m_threhold[i])
-            m_glLeg[i]->setTouchStatus(values[i]>m_threhold[i]);
+    if(preprevalues[i]<m_threhold[i])
+        if(prevalues[i]<m_threhold[i])
+            m_glLeg[i]->setTouchStatus(values[i]<m_threhold[i]);
     }
 }

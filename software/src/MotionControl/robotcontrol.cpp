@@ -65,17 +65,30 @@ void CRobotControl::UpdateImuData()
 
 void CRobotControl::UpdateFtsPresForce(vector<float> present_torque)
 {
+    
     Matrix<float, 4, 4> temp;
     if(mfForce(2,3) - mfLastForce(2,3) > 0.3 || mfForce(2,3) - mfLastForce(2,3) < -0.3)
         temp.setZero();
-    for(int i=0; i<4; i++)
-        for(int j=0;j<4;j++)
-            temp(i ,j ) = present_torque[i+j*4];
+    temp=inverseMotorMapping(present_torque);
+    // for(int i=0; i<4; i++)
+    //     for(int j=0;j<4;j++)
+    //         temp(i ,j ) = present_torque[i+j*4];
+    // cout<<"temp: "<<temp<<endl;
+    // cout<<"pinv= "<<pinv(m_glLeg[1]->GetJacobian().transpose(),8e-6)<<" "<<endl;
+
     for (int i=0; i<4; i++)
     {
-        mfForce.col(i) = ForceLPF * mfLastForce.col(i) + (1-ForceLPF) *pinv(m_glLeg[i]->GetJacobian().transpose(),8e-6) * temp.col(i);
+        mfForce.col(i) = ForceLPF * mfLastForce.col(i) + (1-ForceLPF) *pinv(m_glLeg[i]->GetJacobian().transpose(),8e-6) * temp.row(i).transpose();
         // cout<<m_glLeg[i]->GetJacobian().transpose().inverse() <<" ";
     }  
+    // static int t=0;
+    // t++;
+    // if(t%8==0){
+    //     cout<<"force= "<<mfForce.col(1).transpose();
+    //     cout<<"\t torque= " <<temp.row(1)<<endl;
+    //     t=1;
+    // }
+        
     mfLastForce = mfForce;
 }
 

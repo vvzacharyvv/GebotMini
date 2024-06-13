@@ -2,7 +2,7 @@
 #ifndef head_H
 #define head_H
 
-#define VMCCONTROL
+//#define VMCCONTROL
 #define ForceLPF  0.3
 /* Admittance control */
 // #define StepHeight_F  17.0*0.001  //swingUp
@@ -36,12 +36,12 @@
 #define TimePeriod 0.05
 #define TimeForGaitPeriod 8.0
 #define PI 3.1415926
-#define THREHOLDLF 800
-#define THREHOLDRF 800
-#define THREHOLDLH 800
-#define THREHOLDRH 800
+#define THREHOLDLF 800//800
+#define THREHOLDRF 1000//800
+#define THREHOLDLH 800//800
+#define THREHOLDRH 800//800
 #define ATTACHDIS_MAX 30.0/1000
-#define ATTACH_TIMES  20
+#define ATTACH_TIMES  9
 #define PrePsotiveFactor 0.04
 
 

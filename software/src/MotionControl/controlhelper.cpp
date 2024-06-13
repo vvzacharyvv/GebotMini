@@ -118,7 +118,13 @@ void SetPos(Matrix<float,4,3> jointCmdPos,DxlAPI& motors,vector<float>& vLastSet
     setPos=motorMapping(jointCmdPos);
     setPos.resize(16);
     for(int i = 0;i< 4 ;i++)
-    setPos[i+12]=jointCmdPos(i,0);
+    {
+        if(i<2)
+         setPos[i+12]=-jointCmdPos(i,0);
+        else
+         setPos[i+12]=jointCmdPos(i,0);
+    }
+   
     for (int i = 0; i < 4; ++i) {
         for (int j = 0; j < 3; ++j) {
             int index = i * 3 + j;
@@ -140,10 +146,10 @@ void SetPos(Matrix<float,4,3> jointCmdPos,DxlAPI& motors,vector<float>& vLastSet
             }
         }
     }
-
+    float offSet[4]={0.349,1.22173,0,0};
     // Ensure to set the last 4 positions correctly
     for (int i = 12; i < 16; ++i) {
-        vLastSetPos[i] = setPos[i];
+        vLastSetPos[i] = setPos[i]+offSet[i-12];
     }
 
     motors.setPosition(vLastSetPos);

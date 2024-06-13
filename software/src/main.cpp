@@ -2,7 +2,7 @@
 #include "ADS1x15.h"
 #define CHECK_RET(q) if((q)==false){return 0;}
 CRobotControl rbt(110.0,60.0,20.0,800.0,ADMITTANCE);
-DxlAPI motors("/dev/ttyAMA0", 1000000, ID, 2);
+DxlAPI motors("/dev/ttyAMA0", 1000000, rbt.ID, 2);
 bool runFlag=0;
 float torque[12];
 
@@ -68,12 +68,12 @@ void *dataSave(void *data)
     data_Force<<"Force_x0y0z0_x1y1z1_..._status0123:"<<endl;
     usleep(1e3);
 
-    // add="../include/data_Torque.csv";
-    // data_Torque.open(add);   // cover the old file
-    // if (data_Torque)    cout<<add<<" file open Successful"<<endl;
-    // else    cout<<add<<" file open FAIL"<<endl;
-    // data_Torque<<"Torque_0-12:"<<endl;
-    // usleep(1e3);
+    add="../include/data_Torque.csv";
+    data_Torque.open(add);   // cover the old file
+    if (data_Torque)    cout<<add<<" file open Successful"<<endl;
+    else    cout<<add<<" file open FAIL"<<endl;
+    data_Torque<<"Torque_0-12:"<<endl;
+    usleep(1e3);
 
     while(rbt.bInitFlag == 0) //wait for initial
         usleep(1e2);
@@ -90,11 +90,17 @@ void *dataSave(void *data)
             gettimeofday(&startTime,NULL);
             //record data       Prevent simultaneous access to the same memory!
              rbt.UpdateImuData();
+              for(int i=0; i<4;i++)
+        {
+            cout<<" "<<rbt.m_glLeg[i]->getTouchStatus()<<" ";
+        }
+        cout<<endl;
             for (int i = 0; i < 3; i++)
                 for (int j = 0; j < 4; j++)
                     fDataForce[i*4+j]=rbt.mfForce(i, j);  
-            // for (int i = 0; i < 12; i++)
-            //     fDataTorque[i]=rbt.dxlMotors.present_torque[i];
+            for (int i = 0; i < 16; i++)
+                fDataTorque[i]=motors.present_torque[i];
+         
             // for (size_t i = 0; i < 4; i++)
             //     status[i]=rbt.m_glLeg[i]->GetLegStatus();
             //write data
@@ -115,14 +121,14 @@ void *dataSave(void *data)
             for (size_t i = 0; i < 12; i++)
             {
                 data_Force<<fDataForce[i]<<",";
-                // data_Torque<<fDataTorque[i]<<",";
+                data_Torque<<fDataTorque[i]<<",";
                 // data_Torque<<torque[i]<<",";
             }
             // for (size_t i = 0; i < 4; i++)
             //      data_Force<<status[i]<<",";
 
             data_Force<<endl;
-            // data_Torque<<endl;
+            data_Torque<<endl;
                 // for (size_t i = 0; i < 12; i++)
                 // {
                 //     cout<<torque[i]<<",";
@@ -152,7 +158,9 @@ void *robotStateUpdateSend(void *data)
     
     
     //motors initial
-
+    motors.setOperatingMode(3);
+    motors.torqueEnable();
+    motors.getPosition();
 #if(INIMODE==1)
     vector<float> init_Motor_angle(12);
     float float_init_Motor_angle[12];
@@ -189,10 +197,10 @@ void *robotStateUpdateSend(void *data)
     rbt.SetPhase(TimePeriod, TimeForGaitPeriod, TimeForSwingPhase);
 
 #if(INIMODE==2)
-   float  float_initPos[12]={   70.0,65.5,-21.0,
-                                70.0,-65.5,-21.0,
-                               -84.0, 65.5,-21.0,
-                               -84.0, -65.5,-21.0};
+//    float  float_initPos[12]={   70.0,65.5,-21.0,
+//                                 70.0,-65.5,-21.0,
+//                                -84.0, 65.5,-21.0,
+//                                -84.0, -65.5,-21.0};
 // 60, 60, -30,
 // 60,-60, -30,
 // -60, 60, -30,
@@ -210,8 +218,8 @@ void *robotStateUpdateSend(void *data)
 //  80, -55, -16,
 // -40,  55, -16,
 // -40, -69, -18,
-//    float  float_initPos[12];
-//    string2float("../include/initPos.csv", float_initPos);//Foot end position
+   float  float_initPos[12];
+   string2float("../include/initPos.csv", float_initPos);//Foot end position
     for(int i=0; i<4; i++)
         for(int j=0;j<3;j++)
         {
@@ -248,14 +256,13 @@ void *robotStateUpdateSend(void *data)
             //If stay static, annotate below one line.
             
             rbt.NextStep();
-            cout<<"rbt.mfLegCmdPos:"<<rbt.mfLegCmdPos<<endl;
+           // cout<<"rbt.mfLegCmdPos:"<<rbt.mfLegCmdPos<<endl;
             
             rbt.AirControl();
-            // rbt.AttitudeCorrection90();
+            rbt.AttitudeCorrection180();
             
-           // rbt.ParaDeliver();
+            rbt.ParaDeliver();
             
-            // rbt.UpdateImuData();     // segmentation fault
             //cout<<"LegCmdPos:\n"<<rbt.mfLegCmdPos<<endl;    
             // cout<<"TargetPos:\n"<<rbt.mfTargetPos<<endl<<endl; 
             // cout<<"Compensation:\n"<<rbt.mfCompensation<<endl<<endl; 
@@ -296,6 +303,8 @@ void *runImpCtller(void *data)
             //rbt.UpdatejointPresVel(); //useless,wrong data
             rbt.ForwardKinematics(1);
             rbt.UpdateJacobians();
+          
+
            // rbt.UpdateFtsPresVel();
             rbt.UpdateFtsPresForce(motors.present_torque);  
             // for (size_t i = 0; i < 12; i++)
@@ -313,9 +322,8 @@ void *runImpCtller(void *data)
 
             /*      Postion control      */
              rbt.InverseKinematics(rbt.mfLegCmdPos); 
-             cout<<endl;
-             cout<<"mfLegCmdPos:\n"<<rbt.mfLegCmdPos<<endl;
-             cout<<"mfJointCmdPos:\n"<<rbt.mfJointCmdPos<<endl;
+            // cout<<"mfLegCmdPos:\n"<<rbt.mfLegCmdPos<<endl;
+             //cout<<"mfJointCmdPos:\n"<<rbt.mfJointCmdPos<<endl;
             // cout<<"mfLegCmdPos: \n"<<rbt.mfLegCmdPos<<endl;
             // cout<<"target_pos: \n"<<rbt.mfTargetPos<<endl;
             // cout<<"legPresPos: \n"<<rbt.mfLegPresPos<<"; \nxc: \n"<<rbt.xc<<endl;
@@ -351,6 +359,8 @@ void *SvUpdate(void *data)
     preValue=value;
     prepreValue=value;
     while(1){
+        if(runFlag){
+
         struct timeval startTime,endTime;
         double timeUse;
         int gain=1;
@@ -360,6 +370,7 @@ void *SvUpdate(void *data)
             usleep(10000);
         }
         rbt.UpdateTouchStatus(value,preValue,prepreValue);
+       
         prepreValue=preValue;
         preValue=value;
 
@@ -373,7 +384,7 @@ void *SvUpdate(void *data)
                 for (size_t i = 0; i < 4; i++)
                 {
                     if(rbt.m_glLeg[i]->GetLegStatus()!=recover&&rbt.m_glLeg[i]->GetLegStatus()!=stance)
-                      rbt.probeTrigger[i]=true;
+                      rbt.probeTrigger[i]=false;
                 }
             }
         }
@@ -383,6 +394,8 @@ void *SvUpdate(void *data)
         timeUse = 1e6*(endTime.tv_sec - startTime.tv_sec) + endTime.tv_usec - startTime.tv_usec;
         if(timeUse < 1e4)
         usleep(1.0/loopRateSVRead*1e6 - (double)(timeUse) - 10); 
+        }
+
     }
 
 }
@@ -416,18 +429,18 @@ int main(int argc, char ** argv)
 		printf("create pthread4 error!\n");
 		exit(1);
 	}
-    //  ret = pthread_create(&th5,NULL,SvUpdate,NULL);
-    // if(ret != 0)
-	// {
-	// 	printf("create pthread4 error!\n");
-	// 	exit(1);
-	// }
+     ret = pthread_create(&th5,NULL,SvUpdate,NULL);
+    if(ret != 0)
+	{
+		printf("create pthread5 error!\n");
+		exit(1);
+	}
     
     pthread_join(th1, NULL);
     pthread_join(th2, NULL);
     pthread_join(th3, NULL);
     pthread_join(th4, NULL);
-   // pthread_join(th5, NULL);
+    pthread_join(th5, NULL);
     while(1);
 
     

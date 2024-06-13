@@ -90,7 +90,7 @@ public:
      
     //DxlAPI dxlMotors;  //3000000  cannot hold 6 legs ttyUSB0 ttyAMA0
     
-   
+    vector<int> ID{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     //void SetTor(vector<float> setTor);
     
     void UpdateLegStatus(int legNum);
