@@ -64,6 +64,7 @@ public:
     bool BSwingPhaseStartFlag, BSwingPhaseEndFlag;
     vector<float> vLastSetPos;
     CGebot(float length,float width,float height,float mass);
+    ~CGebot();
     void SetInitPos(Matrix<float, 4, 3> initPosition);
     void InertiaInit();
     void SetCoMVel(Matrix<float, 6,1> tCV);   
@@ -76,6 +77,9 @@ public:
     void InverseKinematics(Matrix<float, 4, 3> cmdpos);   // standing state
     void UpdateFtsPresVel(); 
     void UpdateTouchStatus(vector<int> values,vector<int> prevalues,vector<int> preprevalues);
+    void UpdateLegStatus(int legNum);
+    void AttitudeCorrection180();
+    void AttitudeCorrection90();
     //robot control
     //pump control
      uint8_t svStatus=0b00000000;
@@ -92,10 +96,9 @@ public:
     
     vector<int> ID{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     //void SetTor(vector<float> setTor);
-    
-    void UpdateLegStatus(int legNum);
-    void AttitudeCorrection180();
-    void AttitudeCorrection90();
+    //info print:
+    void errorInfo();
+   
      
     
 

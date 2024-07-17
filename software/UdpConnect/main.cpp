@@ -35,6 +35,16 @@ int main(int argc, char *argv[])
             buf = "stop";
             goto SEND;
         }
+		 if(command=='p')
+        {
+            buf = "pumpPositive";
+            goto SEND;
+        }
+		 if(command=='n')
+        {
+            buf = "pumpNegative";
+            goto SEND;
+        }
       
         SEND:
 		CHECK_RET(cli_sock.Send(buf, srv_ip, srv_port));

@@ -1,12 +1,12 @@
 #include "gebot.h"
 
-
+//extern bool runFlag = false;
 bool swingtimeFlag = false;
 CGebot::CGebot(float length,float width,float height,float mass)
 {
     //dxlMotors.init("/dev/ttyAMA0", 1000000, ID, 2);  // CAN NOT 4M.   ttyUSB0 ttyAMA0      
-    m_glLeg[0] = new CLeg(LF,65.5,70.0,21.0);  // mm
-    m_glLeg[1] = new CLeg(RF,65.5,70.0,21.0);
+    m_glLeg[0] = new CLeg(LF,65.5,84.0,21.0);  // mm
+    m_glLeg[1] = new CLeg(RF,65.5,84.0,21.0);
     m_glLeg[2] = new CLeg(LH,65.5,84.0,21.0);
     m_glLeg[3] = new CLeg(RH,65.5,84.0,21.0); //24
     m_fLength=length/1000.0;
@@ -26,9 +26,9 @@ CGebot::CGebot(float length,float width,float height,float mass)
     }
     
     fSwingPhaseStatusPart[0]=0.4; //detach
-    fSwingPhaseStatusPart[1]=0.3; //swingUp
-    fSwingPhaseStatusPart[2]=0.3; //swingDown
-    // fSwingPhaseStatusPart[3]=0.3; //attach
+    fSwingPhaseStatusPart[1]=0.2; //swingUp
+    fSwingPhaseStatusPart[2]=0.2; //swingDown
+     fSwingPhaseStatusPart[3]=0.3; //attach
     fStancePhaseStatusPart[0]=0.1;//recover  
     fStancePhaseStatusPart[1]=0.9;//stance
     mfSwingVelocity.setZero();
@@ -54,8 +54,35 @@ CGebot::CGebot(float length,float width,float height,float mass)
     // api.setPump(29, HIGH);//RH
     usleep(1e6);
 }
+CGebot::~CGebot()
+{
+    for(int i=0;i<4;i++){
+        delete m_glLeg[i];
+    }
+    
+}
+/**
+ * @brief print robot info if error
+ *
+ */
+void CGebot::errorInfo()
+{
+    cout<<"current robot info: \n";
+    cout<<setw(10)<<"name"
+        <<setw(10)<<"istouched"
+        <<setw(10)<<"preStatus"
+        <<setw(10)<<"lefttimes"
+        <<setw(10)<<"attachleft"<<endl;
+    for(int i=0;i<4;i++){
+        cout<<setw(10)<<i
+            <<setw(10)<<m_glLeg[i]->getTouchStatus()
+            <<setw(10)<<m_glLeg[i]->GetLegStatus()
+            <<setw(10)<<iStatusCounter[i]
+            <<setw(10)<<attchTimes[i]<<endl;
 
 
+    }
+}
 /**
  * @brief set phases for gait
  * 
@@ -86,7 +113,7 @@ void CGebot::SetPhase(float tP, float tFGP, Matrix<float,4,2> tFSP)
         iStatusCounterBuffer[legNum][int(detach)] = floor(fTimeForSwing[legNum] / fTimePeriod * fSwingPhaseStatusPart[0]);
         iStatusCounterBuffer[legNum][int(swingUp)] = floor(fTimeForSwing[legNum] / fTimePeriod * fSwingPhaseStatusPart[1]);
         iStatusCounterBuffer[legNum][int(swingDown)] = floor(fTimeForSwing[legNum] / fTimePeriod * fSwingPhaseStatusPart[2]);
-        // iStatusCounterBuffer[legNum][int(attach)] = floor(fTimeForSwing[legNum] / fTimePeriod * fSwingPhaseStatusPart[3]);
+        iStatusCounterBuffer[legNum][int(attach)] = floor(fTimeForSwing[legNum] / fTimePeriod * fSwingPhaseStatusPart[3]);
         iStatusCounterBuffer[legNum][int(recover)] = floor( (fTimeForGaitPeriod - fTimeForSwing[legNum]) / fTimePeriod * fStancePhaseStatusPart[0]);
         iStatusCounterBuffer[legNum][int(stance)] = floor( (fTimeForGaitPeriod - fTimeForSwing[legNum]) / fTimePeriod * fStancePhaseStatusPart[1]);
     }
@@ -94,7 +121,7 @@ void CGebot::SetPhase(float tP, float tFGP, Matrix<float,4,2> tFSP)
     fSwPSFactor[0]=fSwingPhaseStatusPart[0];
     fSwPSFactor[1]=fSwPSFactor[0]+fSwingPhaseStatusPart[1];
     fSwPSFactor[2]=fSwPSFactor[1]+fSwingPhaseStatusPart[2];
-    // fSwPSFactor[3]=fSwPSFactor[2]+fSwingPhaseStatusPart[3];
+    fSwPSFactor[3]=fSwPSFactor[2]+fSwingPhaseStatusPart[3];
     fStPSFactor[0]=fStancePhaseStatusPart[0];
     fStPSFactor[1]=fStPSFactor[0]+fStancePhaseStatusPart[1];
     for(uint8_t legNum=0; legNum<4; legNum++) 
@@ -114,11 +141,11 @@ void CGebot::SetPhase(float tP, float tFGP, Matrix<float,4,2> tFSP)
             iStatusCounter[legNum] = floor((fTimeForSwing[legNum] * fSwPSFactor[2] - (fTimePresent-mfTimeForSwingPhase(legNum,0)) ) / fTimePeriod);
             m_glLeg[legNum]->ChangeStatus(swingDown);
         }
-        // else if(fTimePresent - mfTimeForSwingPhase(legNum,0) >=  fTimeForSwing[legNum] * fSwPSFactor[2] &&  fTimePresent - mfTimeForSwingPhase(legNum,0) <  fTimeForSwing[legNum] * fSwPSFactor[3] )
-		// {
-        //     iStatusCounter[legNum] = floor((fTimeForSwing[legNum] * fSwPSFactor[3] - (fTimePresent-mfTimeForSwingPhase(legNum,0)) ) / fTimePeriod);
-        //     m_glLeg[legNum]->ChangeStatus(attach);
-        // }
+        else if(fTimePresent - mfTimeForSwingPhase(legNum,0) >=  fTimeForSwing[legNum] * fSwPSFactor[2] &&  fTimePresent - mfTimeForSwingPhase(legNum,0) <  fTimeForSwing[legNum] * fSwPSFactor[3] )
+		{
+            iStatusCounter[legNum] = floor((fTimeForSwing[legNum] * fSwPSFactor[3] - (fTimePresent-mfTimeForSwingPhase(legNum,0)) ) / fTimePeriod);
+            m_glLeg[legNum]->ChangeStatus(attach);
+        }
         else //stance phase
 		{
             if( fTimePresent + fTimeForGaitPeriod - mfTimeForStancePhase(legNum,0) < (fTimeForGaitPeriod - fTimeForSwing[legNum]) * fStPSFactor[0] )
@@ -143,28 +170,31 @@ void CGebot::SetPhase(float tP, float tFGP, Matrix<float,4,2> tFSP)
  */
 void CGebot::UpdateLegStatus(int legNum)
 {
-     if(m_glLeg[legNum]->GetLegStatus()==attach)
-    {
-        attchTimes[legNum]--;
-        if(attchTimes[legNum]<0){
-            autoControlFlag=0;
-            return;
-        }
-    }
-    else
+    //  if(m_glLeg[legNum]->GetLegStatus()==attach)
+    // {
+    //     attchTimes[legNum]--;
+    //     if(attchTimes[legNum]<0){
+    //        // autoControlFlag=false;
+    //        // runFlag=false;
+    //         cout<<"adheresion fail,waiting ......"<<endl;
+    //         errorInfo();
+    //         touchTrigger[legNum] == true;
+    //     }
+    // }
+    // else
      iStatusCounter[legNum]--;
    
     // BSwingPhaseStartFlag = 0;
     // BSwingPhaseEndFlag = 0;
-    bool ts=m_glLeg[legNum]->getTouchStatus() ;
+    // bool ts=m_glLeg[legNum]->getTouchStatus() ;
    
-    if(probeTrigger[legNum]== true){
-        if(ts == true){
-              probeTrigger[legNum]=false;
-              touchTrigger[legNum]=true;
-        }
-    }
-    if(iStatusCounter[legNum] <= 0 || touchTrigger[legNum] == true )
+    // if(probeTrigger[legNum]== true){
+    //     if(ts == true){
+    //           probeTrigger[legNum]=false;
+    //           touchTrigger[legNum]=true;
+    //     }
+    // }
+    if(iStatusCounter[legNum] <= 0) //|| touchTrigger[legNum] == true )
         switch(m_glLeg[legNum]->GetLegStatus())
         {
         case detach:
@@ -176,19 +206,19 @@ void CGebot::UpdateLegStatus(int legNum)
             iStatusCounter[legNum] = iStatusCounterBuffer[legNum][int(swingDown)];
             break;
         case swingDown:
-            if(ts != true){
+            //if(ts != true){
                 m_glLeg[legNum]->ChangeStatus(attach);
-                iStatusCounter[legNum] = iStatusCounterBuffer[legNum][int(recover)];
-                probeTrigger[legNum]=true;
-            }
-            else{
-            m_glLeg[legNum]->ChangeStatus(recover);
-            iStatusCounter[legNum] = iStatusCounterBuffer[legNum][int(recover)];
-            mfStancePhaseStartPos(legNum) = mfLegCmdPos(legNum);
-            for(int pos=0; pos<3; pos++)
-                    targetCoMPosition(legNum, pos) = 0.0;
-            BSwingPhaseEndFlag = true;
-            }
+                iStatusCounter[legNum] = iStatusCounterBuffer[legNum][int(attach)];
+                //probeTrigger[legNum]=true;
+            //}
+            // else{
+            // m_glLeg[legNum]->ChangeStatus(recover);
+            // iStatusCounter[legNum] = iStatusCounterBuffer[legNum][int(recover)];
+            // mfStancePhaseStartPos(legNum) = mfLegCmdPos(legNum);
+            // for(int pos=0; pos<3; pos++)
+            //         targetCoMPosition(legNum, pos) = 0.0;
+            // BSwingPhaseEndFlag = true;
+            //}
             break;
         case attach:
             m_glLeg[legNum]->ChangeStatus(recover);
@@ -239,8 +269,8 @@ void CGebot::SetInitPos(Matrix<float, 4, 3> initPosition)
  */
 void CGebot::InertiaInit()
 {
-    float  I[256];
-    string2float("../include/inertiaInit.csv", I);
+    std::vector<float>  I(256);
+  //  string2float("../include/inertiaInit.csv", I);
     for(size_t i=0;i<96;i=i+12)
     {   
         Pc[i/12]<<I[i],I[i+1],I[i+2];
@@ -361,7 +391,7 @@ void CGebot::NextStep()
             fStepHeight = StepHeight_H;
         
         // cout<<"leg_"<<(int)legNum<<"_status: "<<(int)ls<<endl;
-        if( ls == stance || ls == recover) //stance phase
+        if( ls == stance) //stance phase
         {     
             for(int pos=0; pos<3; pos++)
             {
@@ -376,18 +406,12 @@ void CGebot::NextStep()
             Matrix<float, 4, 1> oneShoulderPos_4x1;
             oneShoulderPos_4x1<<mfShoulderPos(legNum,0), mfShoulderPos(legNum,1),0,1;
             oneShoulderPos_4x1 = trans * oneShoulderPos_4x1;
-            if(ls==stance)
              for (size_t i = 0; i < 3; i++)
-                mfLegCmdPos(legNum, i) = mfStancePhaseStartPos(legNum, i) + (mfShoulderPos(legNum, i) - oneShoulderPos_4x1(i));
-                //  cout<<"mfStancePhaseStartPos(legNum, i): \n"<<mfStancePhaseStartPos(legNum, i)<<endl;
-                //  cout<<"oneShoulderPos_3x1("<<i<<")"<<oneShoulderPos_4x1(i)<<endl;
-                //  cout<<"mfShoulderPos(legNum,"<<i<<")"<<mfShoulderPos(legNum, i)<<endl;
-            else if(ls == recover){
-                for (size_t i = 0; i < 3; i++)
-                    mfLegCmdPos(legNum, i) = mfStancePhaseStartPos(legNum, i) + (mfShoulderPos(legNum, i) - oneShoulderPos_4x1(i));
-                mfLegCmdPos(legNum, 2) +=  attchDis[legNum] / iStatusCounterBuffer[legNum][(int)ls];
+                mfLegCmdPos(legNum, i) = mfStancePhaseStartPos(legNum, i) + (mfShoulderPos(legNum, i) - oneShoulderPos_4x1(i));  
+        }
+        else if(ls == recover){
+            mfLegCmdPos(legNum, 2) +=  Press / iStatusCounterBuffer[legNum][(int)ls];
 
-            }
         }
         else if( ls == detach || ls == swingUp )   //swing phase 
         {
@@ -428,10 +452,11 @@ void CGebot::NextStep()
         }
         else if( ls == attach )    //swing phase
         {
-            mfLegCmdPos(legNum, 0) -=vfTargetCoMVelocity(0,0)*fTimePeriod; // make x y stationary to ground;
-            mfLegCmdPos(legNum, 1) -=vfTargetCoMVelocity(1,0)*fTimePeriod;
-            mfLegCmdPos(legNum, 2) -=  ATTACHDIS_MAX/ATTACH_TIMES;
-            attchDis[legNum]+=ATTACHDIS_MAX/ATTACH_TIMES;
+           // mfLegCmdPos(legNum, 0) -=vfTargetCoMVelocity(0,0)*fTimePeriod; // make x y stationary to ground;
+           //mfLegCmdPos(legNum, 1) -=vfTargetCoMVelocity(1,0)*fTimePeriod;
+            //mfLegCmdPos(legNum, 2) -=  ATTACHDIS_MAX/ATTACH_TIMES;
+            //attchDis[legNum]+=ATTACHDIS_MAX/ATTACH_TIMES;
+             mfLegCmdPos(legNum, 2) -=  Press / iStatusCounterBuffer[legNum][(int)ls];
         }
         // else if( ls == recover )   //stance phase
         // {   // mfLegCmdPos(legNum, 2)  is not related to mfStancePhaseEndPos(legNum, 2) and mfStartPhaseEndPos(legNum, 2)
@@ -490,6 +515,7 @@ void CGebot::PumpAllPositve()
     svStatus=0b10101010;
     api.setSV(svStatus);
 }
+
 void CGebot::PumpPositive(int legNum)
 {
     if(legNum==0) legNum=3;
@@ -532,11 +558,15 @@ void CGebot::AirControl()
             {
                 PumpPositive(legNum);
                 BSwingPhaseStartFlag = true;
+            // cout<<legNum<<"th has been changed to be positive in stance!"<<endl;
             }    
         }
-        else if(m_glLeg[legNum]->GetLegStatus()==detach)
-            PumpPositive(legNum);
-        //cout<<"svStatus:"<<std::setw(2)<<svStatus<<endl;
+        else if(m_glLeg[legNum]->GetLegStatus()==detach){
+             PumpPositive(legNum);
+            //  cout<<legNum<<"th has been changed to be positive in detach!"<<endl;
+        }
+           
+       
     }
 }
 /**
@@ -717,9 +747,9 @@ void CGebot::AttitudeCorrection90()
 
 }
 void CGebot::UpdateTouchStatus(vector<int> values,vector<int> prevalues,vector<int> preprevalues){
-    for(auto a:values)
-    cout<<a<<" ";
-    cout<<endl;
+    // for(auto a:values)
+    // cout<<a<<" ";
+    // cout<<endl;
     for(int i=0;i<4;i++){
     if(preprevalues[i]<m_threhold[i])
         if(prevalues[i]<m_threhold[i])

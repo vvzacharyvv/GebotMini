@@ -2,7 +2,7 @@
 using namespace Eigen;
 void CRobotControl::Init(){
     float impdata[200];
-    string2float("../include/adm_parameter.csv",impdata);   // 0-swing,1-attach,2-stance,3-detach
+    string2float2("../include/adm_parameter.csv",impdata);   // 0-swing,1-attach,2-stance,3-detach
     for(int i=0; i<4; i++)
     {
     Map<Matrix<float, 4, 3, RowMajor>> mapK(impdata + 36 * i), mapB(impdata + 12 + 36 * i), mapM(impdata  + 24 + 36 * i);
@@ -165,6 +165,18 @@ void CRobotControl::ChangePara(Matrix<float, 4, 3> mK, Matrix<float, 4, 3> mB, M
             mfKattach = mK; mfBattach = mB; mfMattach = mM;   
             break; 
     }
+}
+
+void CRobotControl::VibrationControl_quad(float k, float c,float m)
+{
+      c=2*m*sqrt(k/m); // xi =1
+      float a=1.0,b=250.0;
+      mfXcDotDot.col(2)=mfTargetAcc.col(2)+1*a/m*(b*k/4*(mfLegPresPos.col(2)-mfTargetPos.col(2))+c/4*(mfLegPresVel.col(2)-mfTargetVel.col(2))
+                        +( mfTargetForce.col(2) - mfForce.transpose().col(2)));
+      mfXcDot =  mfLegPresVel + mfXcDotDot * (1/fCtlRate);
+      for(int i=0;i<4;i++)
+      mfLegCmdPos(i,2) = mfLegPresPos(i,2);
+      mfXc = mfLegCmdPos + (mfXcDot * (1/fCtlRate));             
 }
 
 void CRobotControl::Control()

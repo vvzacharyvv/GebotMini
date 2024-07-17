@@ -3,8 +3,8 @@
 #define CHECK_RET(q) if((q)==false){return 0;}
 CRobotControl rbt(110.0,60.0,20.0,800.0,ADMITTANCE);
 DxlAPI motors("/dev/ttyAMA0", 1000000, rbt.ID, 2);
-bool runFlag=0;
-float torque[12];
+volatile bool runFlag=1;
+
 
 void *udpConnect(void *data)
 {
@@ -30,6 +30,10 @@ void *udpConnect(void *data)
         if(ret) {runFlag=1; goto END;}
         ret=commandJudge((char*)string("stop").c_str(),(char *)buf.c_str());
         if(ret) {runFlag=0; goto END;}
+        ret=commandJudge((char*)string("pumpPositive").c_str(),(char *)buf.c_str());
+        if(ret) {rbt.PumpAllPositve(); goto END;}
+        ret=commandJudge((char*)string("pumpNegative").c_str(),(char *)buf.c_str());
+        if(ret) {rbt.PumpAllNegtive(); goto END;}
         // int ret=match((char*)string("start").c_str(),(char*)string("startsada").c_str());
         // cout<<(char*)string("start").c_str()<<endl;
         // cout<<ret<<endl;
@@ -47,8 +51,8 @@ void *udpConnect(void *data)
 
 void *dataSave(void *data)
 {
-    struct timeval startTime,endTime;
-    double timeUse;
+    struct timeval startTime={0,0},endTime={0,0};
+    double timeUse=0.0;;
     ofstream data_IMU, data_Force, data_Torque;
     string add="../include/data_IMU.csv";
     float fAngleZero[3], fDataForce[12], fDataTorque[12];
@@ -90,11 +94,11 @@ void *dataSave(void *data)
             gettimeofday(&startTime,NULL);
             //record data       Prevent simultaneous access to the same memory!
              rbt.UpdateImuData();
-              for(int i=0; i<4;i++)
-        {
-            cout<<" "<<rbt.m_glLeg[i]->getTouchStatus()<<" ";
-        }
-        cout<<endl;
+        //       for(int i=0; i<4;i++)
+        // {
+        //     cout<<" "<<rbt.m_glLeg[i]->getTouchStatus()<<" ";
+        // }
+        // cout<<endl;
             for (int i = 0; i < 3; i++)
                 for (int j = 0; j < 4; j++)
                     fDataForce[i*4+j]=rbt.mfForce(i, j);  
@@ -190,17 +194,28 @@ void *robotStateUpdateSend(void *data)
     //                      0,             TimeForGaitPeriod/4.0,
     //                      TimeForGaitPeriod/4.0 *3,    TimeForGaitPeriod,
     //                      TimeForGaitPeriod/4.0  ,          TimeForGaitPeriod/4.0 *2;
+//if(VELX != 0)
     TimeForSwingPhase<< 8*TimeForGaitPeriod/16, 	11*TimeForGaitPeriod/16,		
                         0,		 		 					3*TimeForGaitPeriod/16,		
                         12*TimeForGaitPeriod/16, 	15*TimeForGaitPeriod/16,		
                         4*TimeForGaitPeriod/16, 	7*TimeForGaitPeriod/16;
+// else 
+//     TimeForSwingPhase<< 0, 	0,		
+//                         0,	0,		
+//                         0,  0,		
+//                         0, 	0;
     rbt.SetPhase(TimePeriod, TimeForGaitPeriod, TimeForSwingPhase);
 
 #if(INIMODE==2)
-//    float  float_initPos[12]={   70.0,65.5,-21.0,
-//                                 70.0,-65.5,-21.0,
-//                                -84.0, 65.5,-21.0,
-//                                -84.0, -65.5,-21.0};
+   float  float_initPos[12]={   84.0,65.5,-21.0,
+                                84.0,-65.5,-21.0,
+                               -84.0, 65.5,-21.0,
+                               -84.0, -65.5,-21.0};
+    // float  float_initPos[12]={    95,  50, -18,
+    //                               85, -55, -18,
+    //                               -65,  55, -22,
+    //                               -70, -55, -12,
+    //                                 };
 // 60, 60, -30,
 // 60,-60, -30,
 // -60, 60, -30,
@@ -218,8 +233,8 @@ void *robotStateUpdateSend(void *data)
 //  80, -55, -16,
 // -40,  55, -16,
 // -40, -69, -18,
-   float  float_initPos[12];
-   string2float("../include/initPos.csv", float_initPos);//Foot end position
+  // std::vector<float> float_initPos(12);
+  // string2float2("../include/initPos.csv", float_initPos);//Foot end position
     for(int i=0; i<4; i++)
         for(int j=0;j<3;j++)
         {
@@ -237,6 +252,9 @@ void *robotStateUpdateSend(void *data)
 #if(INIMODE==2)  
     SetPos(rbt.mfJointCmdPos,motors,rbt.vLastSetPos);
     cout<<"rbt.mfJointCmdPos:"<<rbt.mfJointCmdPos<<endl;
+    rbt.UpdateJacobians();
+    // float k=find_k(560.0/1000,OMEGA,Y0);
+    // cout<<"k = " <<k<<endl;
     
 #endif
     usleep(1e5);
@@ -245,21 +263,18 @@ void *robotStateUpdateSend(void *data)
     usleep(1e6);
     rbt.bInitFlag = 1;
 
-    Matrix<float, 4, 3> mfJointTemp; 
+
     while(1)
     {
-        if(runFlag&&rbt.autoControlFlag)
-        {
-            struct timeval startTime,endTime;
-            double timeUse;
+        if(runFlag){
+            struct timeval startTime={0,0},endTime={0,0};
+            double timeUse=0.0;
             gettimeofday(&startTime,NULL);
             //If stay static, annotate below one line.
-            
-            rbt.NextStep();
-           // cout<<"rbt.mfLegCmdPos:"<<rbt.mfLegCmdPos<<endl;
-            
+            if(VELX != 0)
+                rbt.NextStep();
             rbt.AirControl();
-            rbt.AttitudeCorrection180();
+        // rbt.AttitudeCorrection180();
             
             rbt.ParaDeliver();
             
@@ -273,6 +288,7 @@ void *robotStateUpdateSend(void *data)
                 usleep(1.0/loopRateStateUpdateSend*1e6 - (double)(timeUse) - 10); 
             else
             cout<<"TimeRobotStateUpdateSend: "<<timeUse<<endl;
+            
         }
     }
  
@@ -280,24 +296,26 @@ void *robotStateUpdateSend(void *data)
 
 void *runImpCtller(void *data)
 {
-    struct timeval startTime,endTime;
-    double timeUse;
+    struct timeval startTime={0,0},endTime={0,0};
+    double timeUse=0;
     int run_times=0;    // for debugging
 
     while(rbt.bInitFlag == 0) //wait for initial
         usleep(1e2);
 
     //rbt.dxlMotors.torqueEnable();
+    float k=find_k(560.0/1000,OMEGA,Y0);
+    cout<<"k = " <<k<<endl;
     while (1)
     {
-        if(runFlag&&rbt.autoControlFlag)
+        if(runFlag)
         {
             gettimeofday(&startTime,NULL);
             /* get motors data  */
             motors.getTorque();
             motors.getPosition();
             motors.getVelocity();
-
+        
             /* update the data IMP need */
             rbt.UpdatejointPresPosAndVel(motors.present_position);         
             //rbt.UpdatejointPresVel(); //useless,wrong data
@@ -307,6 +325,11 @@ void *runImpCtller(void *data)
 
            // rbt.UpdateFtsPresVel();
             rbt.UpdateFtsPresForce(motors.present_torque);  
+            cout<<"mfforce:"<<rbt.mfForce<<endl;
+            cout<<"torque: ";
+            for(auto a:motors.present_torque)
+                cout<<a<<" ";
+            cout<<endl;
             // for (size_t i = 0; i < 12; i++)
             // {
             //     torque[i] = rbt.dxlMotors.present_torque[i];
@@ -315,15 +338,16 @@ void *runImpCtller(void *data)
 
             /*      Admittance control     */ 
             // rbt.Control();   
-            // rbt.InverseKinematics(rbt.mfXc);    // Admittance control
-
+            rbt.VibrationControl_quad(k,1,800.0/1000);
+            rbt.InverseKinematics(rbt.mfXc);    // Admittance control
+            cout<<"xc_dotdot: \n"<<rbt.mfXcDotDot<<"; \nxc_dot: \n"<<rbt.mfXcDot<<"; \nxc: \n"<<rbt.mfXc<<endl;
             /*      Postion control with Comp      */
-            // rbt.InverseKinematics(rbt.mfTargetPos); //    Postion control
+            //rbt.InverseKinematics(rbt.mfTargetPos); //    Postion control
 
             /*      Postion control      */
-             rbt.InverseKinematics(rbt.mfLegCmdPos); 
-            // cout<<"mfLegCmdPos:\n"<<rbt.mfLegCmdPos<<endl;
-             //cout<<"mfJointCmdPos:\n"<<rbt.mfJointCmdPos<<endl;
+             //rbt.InverseKinematics(rbt.mfLegCmdPos); 
+            cout<<"mfLegCmdPos:\n"<<rbt.mfLegCmdPos<<endl;
+            //cout<<"mfJointCmdPos:\n"<<rbt.mfJointCmdPos<<endl;
             // cout<<"mfLegCmdPos: \n"<<rbt.mfLegCmdPos<<endl;
             // cout<<"target_pos: \n"<<rbt.mfTargetPos<<endl;
             // cout<<"legPresPos: \n"<<rbt.mfLegPresPos<<"; \nxc: \n"<<rbt.xc<<endl;
@@ -350,6 +374,7 @@ void *runImpCtller(void *data)
     }
   
 }
+#ifdef PRESSDETECT
 void *SvUpdate(void *data)
 {   
     ADS1015 ads;
@@ -359,28 +384,32 @@ void *SvUpdate(void *data)
     preValue=value;
     prepreValue=value;
     while(1){
-        if(runFlag){
+        if(1){
 
-        struct timeval startTime,endTime;
-        double timeUse;
+        struct timeval startTime={0,0},endTime={0,0};
+        double timeUse=0.0;
         int gain=1;
         for(int i=0;i<4;i++)
         {
             value[i]=(int)ads.read_adc(i,gain);
             usleep(10000);
         }
+        swap(value[0],value[1]); //to fit the queue of sensor in real world;
+        // for(auto a:value)   cout<<a<<" ";
+        // cout<<endl;
         rbt.UpdateTouchStatus(value,preValue,prepreValue);
        
         prepreValue=preValue;
         preValue=value;
 
-        if(rbt.autoControlFlag == false){
+        if(runFlag == false){
             int count=0;
             for(auto a:rbt.m_glLeg){
                 if(a->getTouchStatus()==true)   count++;
             }
             if(count == 4){
-                rbt.autoControlFlag=true;
+                //rbt.autoControlFlag=true;
+                runFlag=true;
                 for (size_t i = 0; i < 4; i++)
                 {
                     if(rbt.m_glLeg[i]->GetLegStatus()!=recover&&rbt.m_glLeg[i]->GetLegStatus()!=stance)
@@ -399,6 +428,7 @@ void *SvUpdate(void *data)
     }
 
 }
+#endif
 int main(int argc, char ** argv)
 {   
     
@@ -429,18 +459,18 @@ int main(int argc, char ** argv)
 		printf("create pthread4 error!\n");
 		exit(1);
 	}
-     ret = pthread_create(&th5,NULL,SvUpdate,NULL);
-    if(ret != 0)
-	{
-		printf("create pthread5 error!\n");
-		exit(1);
-	}
+    //  ret = pthread_create(&th5,NULL,SvUpdate,NULL);
+    // if(ret != 0)
+	// {
+	// 	printf("create pthread5 error!\n");
+	// 	exit(1);
+	// }
     
     pthread_join(th1, NULL);
     pthread_join(th2, NULL);
     pthread_join(th3, NULL);
     pthread_join(th4, NULL);
-    pthread_join(th5, NULL);
+    //pthread_join(th5, NULL);
     while(1);
 
     

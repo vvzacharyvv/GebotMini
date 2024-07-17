@@ -3,6 +3,9 @@ PROJECT(robot)
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/build)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0")
+add_compile_options(-Wuninitialized)
 
 #include directories
 include_directories(${PROJECT_SOURCE_DIR}/include/dynamixel)

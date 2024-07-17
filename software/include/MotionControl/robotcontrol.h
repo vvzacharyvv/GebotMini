@@ -33,7 +33,7 @@ public:
     void ParaDeliver();
     void Control();
     void ChangePara(Matrix<float, 4, 3> mK, Matrix<float, 4, 3> mB, Matrix<float, 4, 3> mM,int mode);
-   
+    void VibrationControl_quad(float k,float c,float m);
     //vmc
      // ASM: 0, -c, b, c, 0, -a, -b, a, 0
     vector<Matrix<float,3,3> >  mfFtsPosASM;

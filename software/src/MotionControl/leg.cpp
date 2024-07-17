@@ -56,69 +56,39 @@ void CLeg::UpdateJacobian()
         float s1=sin(m_fTheta1),c1=cos(m_fTheta1),s2=sin(m_fTheta2),c2=cos(m_fTheta2),s3=sin(m_fTheta3),c3=cos(m_fTheta3);
         float s23=s2*c3+s3*c2,c23=c2*c3-s2*s3;
         float factor_y, factor_z, factor_By, factor_Cy, factor_Bz, factor_Cz, factor_Ax, factor_Bx;
-        switch (m_sName)
-        {
-        case LF:
-            factor_By = -1;
-            factor_Cy = 1;
-            factor_Bz = 1;
-            factor_Cz = 1;
-            factor_Ax = -1;
-            factor_Bx = -1;
-            factor_y = 1;
-            factor_z = 1;
-            break;
-        case RF:
-            factor_By = 1;
-            factor_Cy = -1;
-            factor_Bz = -1;
-            factor_Cz = -1;
-            factor_Ax = 1;
-            factor_Bx = -1;
-            factor_y = -1;
-            factor_z = -1;
-            break;
-        case LH:
-            factor_By = 1;
-            factor_Cy = 1;
-            factor_Bz = -1;
-            factor_Cz = 1;
-            factor_Ax = -1;
-            factor_Bx = 1;
-            factor_y = 1;
-            factor_z = 1;
-            break;
-        case RH:
-            factor_By = -1;
-            factor_Cy = -1;
-            factor_Bz = 1;
-            factor_Cz = -1;
-            factor_Ax = 1;
-            factor_Bx = 1;
-            factor_y = -1;
-            factor_z = -1;
-            break;
-        default:
-            break;
+         if(m_sName==LF){
+        m_mfJacobian(0, 0)= m_fL3*(cos(m_fTheta1)*cos(m_fTheta4) + sin(m_fTheta4)*(sin(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta2)*cos(m_fTheta3)*sin(m_fTheta1))) - m_fL2*(cos(m_fTheta2)*sin(m_fTheta1)*sin(m_fTheta3) + cos(m_fTheta3)*sin(m_fTheta1)*sin(m_fTheta2)) - m_fL1*cos(m_fTheta2)*sin(m_fTheta1);
+        m_mfJacobian(0, 1)=-m_fL2*(cos(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta1)*cos(m_fTheta2)*cos(m_fTheta3)) - m_fL1*cos(m_fTheta1)*sin(m_fTheta2) - m_fL3*sin(m_fTheta4)*(cos(m_fTheta1)*cos(m_fTheta2)*sin(m_fTheta3) + cos(m_fTheta1)*cos(m_fTheta3)*sin(m_fTheta2));
+        m_mfJacobian(0, 2)=- m_fL2*(cos(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta1)*cos(m_fTheta2)*cos(m_fTheta3)) - m_fL3*sin(m_fTheta4)*(cos(m_fTheta1)*cos(m_fTheta2)*sin(m_fTheta3) + cos(m_fTheta1)*cos(m_fTheta3)*sin(m_fTheta2));
+        m_mfJacobian(0, 3)=-m_fL3*(sin(m_fTheta1)*sin(m_fTheta4) + cos(m_fTheta4)*(cos(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta1)*cos(m_fTheta2)*cos(m_fTheta3)));
+        m_mfJacobian(1, 0)= m_fL3*(cos(m_fTheta4)*sin(m_fTheta1) - sin(m_fTheta4)*(cos(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta1)*cos(m_fTheta2)*cos(m_fTheta3))) + m_fL2*(cos(m_fTheta1)*cos(m_fTheta2)*sin(m_fTheta3) + cos(m_fTheta1)*cos(m_fTheta3)*sin(m_fTheta2)) + m_fL1*cos(m_fTheta1)*cos(m_fTheta2);
+        m_mfJacobian(1, 2)= - m_fL2*(sin(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta2)*cos(m_fTheta3)*sin(m_fTheta1)) - m_fL3*sin(m_fTheta4)*(cos(m_fTheta2)*sin(m_fTheta1)*sin(m_fTheta3) + cos(m_fTheta3)*sin(m_fTheta1)*sin(m_fTheta2)) - m_fL1*sin(m_fTheta1)*sin(m_fTheta2);
+        m_mfJacobian(1, 1)=- m_fL2*(sin(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta2)*cos(m_fTheta3)*sin(m_fTheta1)) - m_fL3*sin(m_fTheta4)*(cos(m_fTheta2)*sin(m_fTheta1)*sin(m_fTheta3) + cos(m_fTheta3)*sin(m_fTheta1)*sin(m_fTheta2));
+        m_mfJacobian(1, 3)= m_fL3*(cos(m_fTheta1)*sin(m_fTheta4) - cos(m_fTheta4)*(sin(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta2)*cos(m_fTheta3)*sin(m_fTheta1)));
+        m_mfJacobian(2, 0)=0;
+        m_mfJacobian(2, 1)= - m_fL2*sin(m_fTheta2 + m_fTheta3) - m_fL1*cos(m_fTheta2) - m_fL3*cos(m_fTheta2 + m_fTheta3)*sin(m_fTheta4);
+        m_mfJacobian(2, 2)= - m_fL2*sin(m_fTheta2 + m_fTheta3) - m_fL3*cos(m_fTheta2 + m_fTheta3)*sin(m_fTheta4);
+        m_mfJacobian(2, 3)=   -m_fL3*sin(m_fTheta2 + m_fTheta3)*cos(m_fTheta4);
+        m_mfJacobian=CHANGE*m_mfJacobian;
         }
-        if(m_sName == LF || m_sName==RF){
-        m_mfJacobian(0, 0) = factor_y * (-sin(m_fTheta1) * cos(m_fTheta2) * m_fL1 + factor_By * sin(m_fTheta1) * sin(m_fTheta2 + m_fTheta3) * m_fL2 + factor_Cy* cos(m_fTheta1) * m_fL3);
-        m_mfJacobian(0, 1) = factor_y * (-cos(m_fTheta1) * sin(m_fTheta2) * m_fL1 - factor_By * cos(m_fTheta1) * cos(m_fTheta2 + m_fTheta3) * m_fL2);
-        m_mfJacobian(0, 2) = factor_y * (-factor_By * cos(m_fTheta1) * cos(m_fTheta2 + m_fTheta3) * m_fL2);
-        m_mfJacobian(1, 0) = factor_z * (cos(m_fTheta1) * cos(m_fTheta2) * m_fL1 + factor_Bz * cos(m_fTheta1) * sin(m_fTheta2 + m_fTheta3) * m_fL2 + factor_Cz * sin(m_fTheta1) * m_fL3);
-        m_mfJacobian(1, 1) = factor_z * (-sin(m_fTheta1) * sin(m_fTheta2) * m_fL1 + factor_Bz * sin(m_fTheta1) * cos(m_fTheta2 + m_fTheta3) * m_fL2);
-        m_mfJacobian(1, 2) = factor_z * (factor_Bz * sin(m_fTheta1) * cos(m_fTheta2 + m_fTheta3) * m_fL2);
-        m_mfJacobian(2, 0) = 0;
-        m_mfJacobian(2, 1) = factor_Ax * cos(m_fTheta2) * m_fL1 + factor_Bx * sin(m_fTheta2 + m_fTheta3) * m_fL2;
-        m_mfJacobian(2, 2) = factor_Bx * sin(m_fTheta2 + m_fTheta3) * m_fL2;
-        m_mfJacobian(2, 3) =0;
-        m_mfJacobian(1, 3) =0;
-        m_mfJacobian(0, 3) =0;
-
-        m_mfJacobian = CHANGE * m_mfJacobian;
-        
+            if(m_sName==RF){
+        m_mfJacobian(0, 0)= m_fL2*(cos(m_fTheta2)*sin(m_fTheta1)*sin(m_fTheta3) + cos(m_fTheta3)*sin(m_fTheta1)*sin(m_fTheta2)) - m_fL3*(cos(m_fTheta1)*cos(m_fTheta4) + sin(m_fTheta4)*(sin(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta2)*cos(m_fTheta3)*sin(m_fTheta1))) - m_fL1*cos(m_fTheta2)*sin(m_fTheta1);
+        m_mfJacobian(0, 1)= m_fL2*(cos(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta1)*cos(m_fTheta2)*cos(m_fTheta3)) - m_fL1*cos(m_fTheta1)*sin(m_fTheta2) + m_fL3*sin(m_fTheta4)*(cos(m_fTheta1)*cos(m_fTheta2)*sin(m_fTheta3) + cos(m_fTheta1)*cos(m_fTheta3)*sin(m_fTheta2));
+        m_mfJacobian(0, 2)= m_fL2*(cos(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta1)*cos(m_fTheta2)*cos(m_fTheta3)) + m_fL3*sin(m_fTheta4)*(cos(m_fTheta1)*cos(m_fTheta2)*sin(m_fTheta3) + cos(m_fTheta1)*cos(m_fTheta3)*sin(m_fTheta2));
+        m_mfJacobian(0, 3)= m_fL3*(sin(m_fTheta1)*sin(m_fTheta4) + cos(m_fTheta4)*(cos(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta1)*cos(m_fTheta2)*cos(m_fTheta3)));
+        m_mfJacobian(1, 0)= m_fL1*cos(m_fTheta1)*cos(m_fTheta2) - m_fL2*(cos(m_fTheta1)*cos(m_fTheta2)*sin(m_fTheta3) + cos(m_fTheta1)*cos(m_fTheta3)*sin(m_fTheta2)) - m_fL3*(cos(m_fTheta4)*sin(m_fTheta1) - sin(m_fTheta4)*(cos(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta1)*cos(m_fTheta2)*cos(m_fTheta3)));
+        m_mfJacobian(1, 1)=m_fL2*(sin(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta2)*cos(m_fTheta3)*sin(m_fTheta1)) + m_fL3*sin(m_fTheta4)*(cos(m_fTheta2)*sin(m_fTheta1)*sin(m_fTheta3) + cos(m_fTheta3)*sin(m_fTheta1)*sin(m_fTheta2)) - m_fL1*sin(m_fTheta1)*sin(m_fTheta2);
+        m_mfJacobian(1, 2)=m_fL2*(sin(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta2)*cos(m_fTheta3)*sin(m_fTheta1)) + m_fL3*sin(m_fTheta4)*(cos(m_fTheta2)*sin(m_fTheta1)*sin(m_fTheta3) + cos(m_fTheta3)*sin(m_fTheta1)*sin(m_fTheta2));
+        m_mfJacobian(1, 3)=  -m_fL3*(cos(m_fTheta1)*sin(m_fTheta4) - cos(m_fTheta4)*(sin(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta2)*cos(m_fTheta3)*sin(m_fTheta1)));
+        m_mfJacobian(2, 0)=0;
+        m_mfJacobian(2, 1)=m_fL1*cos(m_fTheta2) - m_fL2*sin(m_fTheta2 + m_fTheta3) - m_fL3*cos(m_fTheta2 + m_fTheta3)*sin(m_fTheta4);
+        m_mfJacobian(2, 2)= - m_fL2*sin(m_fTheta2 + m_fTheta3) - m_fL3*cos(m_fTheta2 + m_fTheta3)*sin(m_fTheta4);
+        m_mfJacobian(2, 3)= -m_fL3*sin(m_fTheta2 + m_fTheta3)*cos(m_fTheta4);
+        CHANGE << 0, 0, 1,
+        -1, 0, 0,
+        0, -1, 0;
+        m_mfJacobian=CHANGE*m_mfJacobian;
          }
-        else{
             if(m_sName==LH){
         m_mfJacobian(0, 0)=m_fL2*(cos(m_fTheta2)*sin(m_fTheta1)*sin(m_fTheta3) + cos(m_fTheta3)*sin(m_fTheta1)*sin(m_fTheta2)) + m_fL3*(cos(m_fTheta1)*cos(m_fTheta4) + sin(m_fTheta4)*(sin(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta2)*cos(m_fTheta3)*sin(m_fTheta1))) - m_fL1*cos(m_fTheta2)*sin(m_fTheta1);
         m_mfJacobian(0, 1)=m_fL2*(cos(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta1)*cos(m_fTheta2)*cos(m_fTheta3)) - m_fL1*cos(m_fTheta1)*sin(m_fTheta2) - m_fL3*sin(m_fTheta4)*(cos(m_fTheta1)*cos(m_fTheta2)*sin(m_fTheta3) + cos(m_fTheta1)*cos(m_fTheta3)*sin(m_fTheta2));
@@ -152,7 +122,6 @@ void CLeg::UpdateJacobian()
         0, -1, 0;
         m_mfJacobian=CHANGE*m_mfJacobian;
          }
-    }
        // m_mfJacobian = m_mfJacobian/1000; // mm -> m
         //  if(m_sName==LF)
         //  cout<<"lf1: "<<m_mfJacobian<<endl;
@@ -166,68 +135,18 @@ Matrix<float,3,1> CLeg::ForwardKinematic()
         Matrix<float,3,1> legPos;
         float s1=sin(m_fTheta1),c1=cos(m_fTheta1),s2=sin(m_fTheta2),c2=cos(m_fTheta2),s3=sin(m_fTheta3),c3=cos(m_fTheta3),s4=sin(m_fTheta4),c4=cos(m_fTheta4);
         float s23=s2*c3+s3*c2,c23=c2*c3-s2*s3;
-        float factor_Ay, factor_By, factor_Cy, factor_Az, factor_Bz, factor_Cz, factor_Ax, factor_Bx;//The sign factors before the formulas m_fL1, m_fL2, and m_fL3, where A represents the sign factors before m_fL1, B represents the sign factors before m_fL2, C represents the sign factors before m_fL3
-        float factor_y, factor_z;//the sign factors of whole formulas of y,z
-        switch (m_sName)
-        {
-        case LF:
-            factor_Ay = 1;
-            factor_By = 1;
-            factor_Cy = 1;
-            factor_Az = 1;
-            factor_Bz = 1;
-            factor_Cz = -1;
-            factor_Ax = -1;
-            factor_Bx = 1;
-            factor_y = 1;
-            factor_z = 1;
-            break;
-        case RF:
-            factor_Ay = 1;
-            factor_By = -1;
-            factor_Cy = -1;
-            factor_Az = 1;
-            factor_Bz = -1;
-            factor_Cz = 1;
-            factor_Ax = 1;
-            factor_Bx = 1;
-            factor_y = -1;
-            factor_z = -1;
-            break;
-        case LH:
-            factor_Ay = 1;
-            factor_By = -1;
-            factor_Cy = 1;
-            factor_Az = 1;
-            factor_Bz = -1;
-            factor_Cz = -1;
-            factor_Ax = -1;
-            factor_Bx = -1;
-            factor_y = 1;
-            factor_z = 1;
-            break;
-        case RH:
-            factor_Ay = 1;
-            factor_By = 1;
-            factor_Cy = -1;
-            factor_Az = 1;
-            factor_Bz = 1;
-            factor_Cz = 1;
-            factor_Ax = 1;
-            factor_Bx = -1;
-            factor_y = -1;
-            factor_z = -1;
-            break;
-        default:
-            break;
-        }
+        float L1=m_fL1,L2=m_fL2,L3=m_fL3;
         // represent y,z,x
-        if(m_sName == LF || m_sName==RF){
-        legPos(1,0) = factor_y * (factor_Ay * cos(m_fTheta1) * cos(m_fTheta2) * m_fL1 + factor_By * cos(m_fTheta1) * sin(m_fTheta2 + m_fTheta3) * m_fL2 + factor_Cy*sin(m_fTheta1) * m_fL3);
-        legPos(2,0) = factor_z * (factor_Az * sin(m_fTheta1) * cos(m_fTheta2) * m_fL1 + factor_Bz * sin(m_fTheta1) * sin(m_fTheta2 + m_fTheta3) * m_fL2 + factor_Cz * cos(m_fTheta1) * m_fL3);
-        legPos(0,0) = factor_Ax * sin(m_fTheta2) * m_fL1 + factor_Bx * cos(m_fTheta2 + m_fTheta3) * m_fL2;
+             if(m_sName==LF){
+        legPos(0,0)= L2*(c2*c3 - s2*s3) - L1*s2 - L3*s4*(c2*s3 + c3*s2);
+        legPos(1,0)= L2*(c1*c2*s3 + c1*c3*s2) + L3*(c4*s1 + s4*(c1*c2*c3 - c1*s2*s3)) + L1*c1*c2;
+        legPos(2,0)= L2*(c2*s1*s3 + c3*s1*s2) - L3*(c1*c4 - s4*(c2*c3*s1 - s1*s2*s3)) + L1*c2*s1;
         }
-        else{
+             if(m_sName==RF){
+        legPos(0,0)= L1*s2 + L2*(c2*c3 - s2*s3) - L3*s4*(c2*s3 + c3*s2);
+        legPos(1,0)= -( L1*c1*c2 - L3*(c4*s1 + s4*(c1*c2*c3 - c1*s2*s3)) - L2*(c1*c2*s3 + c1*c3*s2));
+        legPos(2,0)= -(L3*(c1*c4 - s4*(c2*c3*s1 - s1*s2*s3)) - L2*(c2*s1*s3 + c3*s1*s2) + L1*c2*s1);
+        }
             if(m_sName==LH){
         legPos(0,0)= -m_fL1*s2-m_fL2*c23-m_fL3*s4*s23;
         legPos(1,0)= m_fL1*c1*c2-m_fL2*c1*s23+m_fL3*(c1*s4*c23+c4*s1);
@@ -238,8 +157,6 @@ Matrix<float,3,1> CLeg::ForwardKinematic()
         legPos(1,0)= -(m_fL1*c1*c2+m_fL2*c1*s23-m_fL3*(c1*s4*c23+c4*s1));
         legPos(2,0)= -(m_fL1*s1*c2+m_fL2*s1*s23+m_fL3*(c1*c4-s4*s1*c23));
             }
-        }
-      
         return legPos;
 }
 
@@ -328,34 +245,37 @@ Matrix<float,3,1> CLeg::InverseKinematic(Matrix<float, 1, 3> cmdpos)
         x = cmdpos(0, 0);
         y = cmdpos(0, 1);
         z = cmdpos(0, 2);
-        switch (m_sName)
+        if(m_sName==LF)
         {
-        case LF:
-            factor_x = -1;
-            factor_y = 1;
-            factor_z = 1;
-            factor_1 = 1;
-            factor_2 = -1;
-            factor_0 = 1;
-            break;
-        case RF:
-            factor_x = 1;
-            factor_y = -1;
-            factor_z = -1;
-            factor_1 = -1;
-            factor_2 = 1;
-            factor_0 = -1;
-            break;
-        default:
-            break;
+         float temp[3];
+         temp[0]=x;
+         temp[1]=y;
+         temp[2]=z;
+         x=temp[1];
+         y=temp[2];
+         z=temp[0];
+         jointCmdPos(0, 0)=atan2(L3+y,x);
+         float c1=cos(jointCmdPos(0, 0)),s1=sin(jointCmdPos(0, 0));
+         jointCmdPos(2, 0)=atan2(L3*s1,L2)-atan2((-(x*x+y*y+z*z)+(L1 * L1 + L2 * L2 + L3 * L3))/(2*L1),sqrt((-L3*s1)*(-L3*s1)+L2*L2-((-(x*x+y*y+z*z)+(L1 * L1 + L2 * L2 + L3 * L3))/(2*L1))*((-(x*x+y*y+z*z)+(L1 * L1 + L2 * L2 + L3 * L3))/(2*L1))));
+         float c3=cos(jointCmdPos(2, 0)),s3=sin(jointCmdPos(2, 0));
+         jointCmdPos(1, 0)=atan2(L2*c3+L3*s1*s3,L1+L2*s3-L3*s1*c3)-atan2(z,sqrt((L2*c3+L3*s1*s3)*(L2*c3+L3*s1*s3)+(L1+L2*s3-L3*s1*c3)*(L1+L2*s3-L3*s1*c3)-z*z));   
         }
-        if(m_sName == LF || m_sName==RF){
-         jointCmdPos(0, 0) = atan2(factor_z * z, factor_y * y) + factor_1 * atan2(L3, sqrt(z * z + y * y - L3 * L3));
-         jointCmdPos(2, 0) = factor_2 * asin((L1 * L1 + L2 * L2 + L3 * L3 - x * x - y * y - z * z) / (2 * L1 * L2));
-         jointCmdPos(1, 0) = atan2(factor_x * x, sqrt((L1 + factor_0 * sin(jointCmdPos(2, 0)) * L2) * (L1 + factor_0 * sin(jointCmdPos(2, 0)) * L2) + (cos(jointCmdPos(2, 0)) * L2) * (cos(jointCmdPos(2, 0)) * L2) - x * x)) + factor_0 * atan2(cos(jointCmdPos(2, 0)) * L2, L1 + factor_0 * L2 * sin(jointCmdPos(2, 0)));
+        else if(m_sName==RF)
+        {
+         float temp[3];
+         temp[0]=x;
+         temp[1]=y;
+         temp[2]=z;
+         x=-temp[1];
+         y=-temp[2];
+         z=temp[0];
+         jointCmdPos(0, 0)=atan2(-L3+y,x);
+         float c1=cos(jointCmdPos(0, 0)),s1=sin(jointCmdPos(0, 0));
+         jointCmdPos(2, 0)=atan2(L3*s1,L2)-atan2((x*x+y*y+z*z-(L1 * L1 + L2 * L2 + L3 * L3))/(2*L1),sqrt((L3*s1)*(L3*s1)+L2*L2-(((x*x+y*y+z*z)-(L1 * L1 + L2 * L2 + L3 * L3))/(2*L1))*(((x*x+y*y+z*z)-(L1 * L1 + L2 * L2 + L3 * L3))/(2*L1))));
+         float c3=cos(jointCmdPos(2, 0)),s3=sin(jointCmdPos(2, 0));
+         jointCmdPos(1, 0)=atan2(-L2*c3-L3*s1*s3,L1-L2*s3+L3*s1*c3)-atan2(-z,sqrt((-L2*c3-L3*s1*s3)*(-L2*c3-L3*s1*s3)+(L1-L2*s3+L3*s1*c3)*(L1-L2*s3+L3*s1*c3)-z*z));   
         }
-        else{
-            if(m_sName==LH){
+        else if(m_sName==LH){
          float temp[3];
          temp[0]=x;
          temp[1]=y;
@@ -369,22 +289,21 @@ Matrix<float,3,1> CLeg::InverseKinematic(Matrix<float, 1, 3> cmdpos)
          float c3=cos(jointCmdPos(2, 0)),s3=sin(jointCmdPos(2, 0));
          jointCmdPos(1, 0)=atan2(-L2*c3+L3*s1*s3,L1-L2*s3-L3*s1*s3)-atan2(z,sqrt((-L2*c3+L3*s1*s3)*(-L2*c3+L3*s1*s3)+(L1-L2*s3-L3*s1)*(L1-L2*s3-L3*s1)-z*z));   
         }
-            if(m_sName==RH){
-         float temp[3];
-         temp[0]=x;
-         temp[1]=y;
-         temp[2]=z;
-         x=-temp[1];
-         y=-temp[2];
-         z=temp[0];
-         jointCmdPos(0, 0)=atan2(-L3+y,x);
-         float c1=cos(jointCmdPos(0, 0)),s1=sin(jointCmdPos(0, 0));
-         jointCmdPos(2, 0)=atan2(-L3*s1,L2)-atan2((-(x*x+y*y+z*z)+(L1 * L1 + L2 * L2 + L3 * L3))/(2*L1),sqrt((-L3*s1)*(-L3*s1)+L2*L2-((-(x*x+y*y+z*z)+(L1 * L1 + L2 * L2 + L3 * L3))/(2*L1))*((-(x*x+y*y+z*z)+(L1 * L1 + L2 * L2 + L3 * L3))/(2*L1))));
-         float c3=cos(jointCmdPos(2, 0)),s3=sin(jointCmdPos(2, 0));
-         jointCmdPos(1, 0)=atan2(L2*c3-L3*s1*s3,L1+L2*s3+L3*s1*s3)-atan2(-z,sqrt((L2*c3-L3*s1*s3)*(L2*c3-L3*s1*s3)+(L1+L2*s3+L3*s1)*(L1+L2*s3+L3*s1)-z*z));
-            }
+        else if(m_sName==RH){
+        float temp[3];
+        temp[0]=x;
+        temp[1]=y;
+        temp[2]=z;
+        x=-temp[1];
+        y=-temp[2];
+        z=temp[0];
+        jointCmdPos(0, 0)=atan2(-L3+y,x);
+        float c1=cos(jointCmdPos(0, 0)),s1=sin(jointCmdPos(0, 0));
+        jointCmdPos(2, 0)=atan2(-L3*s1,L2)-atan2((-(x*x+y*y+z*z)+(L1 * L1 + L2 * L2 + L3 * L3))/(2*L1),sqrt((-L3*s1)*(-L3*s1)+L2*L2-((-(x*x+y*y+z*z)+(L1 * L1 + L2 * L2 + L3 * L3))/(2*L1))*((-(x*x+y*y+z*z)+(L1 * L1 + L2 * L2 + L3 * L3))/(2*L1))));
+        float c3=cos(jointCmdPos(2, 0)),s3=sin(jointCmdPos(2, 0));
+        jointCmdPos(1, 0)=atan2(L2*c3-L3*s1*s3,L1+L2*s3+L3*s1*s3)-atan2(-z,sqrt((L2*c3-L3*s1*s3)*(L2*c3-L3*s1*s3)+(L1+L2*s3+L3*s1)*(L1+L2*s3+L3*s1)-z*z));
         }
-      
+        
         return jointCmdPos;
          
     

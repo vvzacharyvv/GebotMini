@@ -8,6 +8,7 @@
 // #include <time.h>
 // #include <stdlib.h>
 #include "robotcontrol.h"
+#include <cstring>
 #include "ADS1x15.h"
 #define loopRate 100 //hz
 
@@ -19,7 +20,7 @@ uint8_t svStatus=0b01010101;
 // uint8_t svStatus=0b10101010;
 
 
-int main()
+int main(int argc, char *argv[])
 {
       
     /*********adc test********/
@@ -30,45 +31,33 @@ int main()
     vector<float> start_pos;
     vector<float> target_tor;
 
-    // for(int i=0; i<4; i++)
-    // {
-    // ID.push_back(3*i);
-    // ID.push_back(3*i+1);
-    // start_pos.push_back(0.00);
-    // start_pos.push_back(0.00);
-    // }
-     for(int i=0; i<16; i++)
+    int p_value = 1100;
+    int d_value = 500;
+    int runFLag = 0;
+
+    for (int i = 1; i < argc; ++i) {
+        if (strcmp(argv[i], "--p") == 0 && i + 1 < argc) {
+            p_value = std::stoi(argv[++i]);
+        } else if (strcmp(argv[i], "--d") == 0 && i + 1 < argc) {
+            d_value = std::stoi(argv[++i]);
+        } else if (strcmp(argv[i], "--r") == 0 && i + 1 < argc) {
+            runFLag = std::stoi(argv[++i]);
+        } else {
+            std::cerr << "Unknown or incomplete argument: " << argv[i] << std::endl;
+            return 1;
+        }
+    }
+
+     for(int i=1; i<=12; i++)
     {
     ID.push_back(i);
     start_pos.push_back(0.00);
     }
-     DxlAPI gecko("/dev/ttyAMA0", 1000000, ID, 2); //ttyUSB0
-//     // gecko.setBaudRate(5);
+     DxlAPI gecko("/dev/ttyAMA0", 3000000, ID, 2); //ttyUSB0
      gecko.setOperatingMode(3);  //3 position control; 0 current control
      gecko.torqueEnable();
      gecko.setPosition(start_pos);
-   // gecko.getPosition();
-//     int times=1;
-//     bool reverse=false;
-//     while(1)
-//     {
-//             gecko.getTorque();
-//             gecko.getPosition();
-//             gecko.getVelocity();
-//             cout<<" present postion: ";
-//             for(int i=0;i<16;i++)
-//             cout<<gecko.present_position[i]<<" ";
-//             cout<<endl;
-//     }
-//     //~ usleep(1e6);
-    //  api.setPump(1, LOW);
-    //  api.setPump(24, LOW);
-    //  api.setPump(28, LOW);
-    //  api.setPump(29, LOW);
-    // float torque[12];
-    // usleep(1e6);
-     //api.setSV(svStatus);
-
+     gecko.setPD(p_value,d_value);
 
     CRobotControl rbt(110.0,60.0,20.0,800.0,ADMITTANCE);
     Matrix<float,4,2> TimeForSwingPhase;
@@ -92,8 +81,7 @@ float  float_initPos[12]={   70.0,65.5,-21.0,
     rbt.SetInitPos(InitPos);
     rbt.InverseKinematics(rbt.mfLegCmdPos);
     cout<<"cmdPos: "<<rbt.mfJointCmdPos<<endl;
-   // rbt.SetPos(rbt.mfJointCmdPos);
- //  rbt.PumpAllPositve();
+ 
     usleep(1e6);
    rbt.SetCoMVel(TCV);
     TimeForSwingPhase<< 8*TimeForGaitPeriod/16, 	11*TimeForGaitPeriod/16,		
@@ -105,32 +93,18 @@ float  float_initPos[12]={   70.0,65.5,-21.0,
 
 //     //ADS1015 ads;
 
-   
-//     // while(1){
-//     //     struct timeval startTime,endTime;
-//     //     double timeUse;
-//     //     gettimeofday(&startTime,NULL);
-//     //     for(int i=0;i<4;i++){
-//     //         value[i]=ads.read_adc(i,gain);
-//     //           usleep(8000);
-//     //     }
-//     //     for(auto a:value){
-//     //         std::cout<<a<<" ";
-//     //     }
-//     //     std::cout<<std::endl;
-//     //     gettimeofday(&endTime,NULL);
-//     //     timeUse = 1e6*(endTime.tv_sec - startTime.tv_sec)+ endTime.tv_usec - startTime.tv_usec;
-//     //     std::cout<<"timeUse="<<timeUse<<std::endl;
-//     // }
-//     /*********adc test********/
-//      vector<int> value(4),preValue(4),prepreValue(4);
-//     for(auto a:value)
-//         a=0;
-//     preValue=value;
-//     prepreValue=value;
+    std::ofstream outFile("torqueRecord.txt");
+
+    // 检查文件是否成功打开
+    if (!outFile) {
+        std::cerr << "无法打开文件进行写入" << std::endl;
+        return 1;
+    }
+
    struct timeval startTimeswing,endTimeswing;
     double timeUseswing;
      gettimeofday(&startTimeswing,NULL);
+     
     for(int times=0; times<2000; times++)
     {
         struct timeval startTime,endTime;
@@ -138,25 +112,22 @@ float  float_initPos[12]={   70.0,65.5,-21.0,
         gettimeofday(&startTime,NULL);
         std::cout<<std::endl;
         std::cout<<"times"<<times<<std::endl;
-        // gecko.getTorque();
-        // gecko.getPosition();
-        // gecko.getVelocity();
-        rbt.NextStep();
+        gecko.getTorque();
+        gecko.getPosition();
+        gecko.getVelocity();
+        if(runFLag) rbt.NextStep();
         rbt.InverseKinematics(rbt.mfLegCmdPos);
-        cout<<"mfLegCmdPos: \n"<<rbt.mfLegCmdPos<<"\n";//<<"mfJointCmdPos: \n"<<rbt.mfJointCmdPos<<endl;
 
-        rbt.UpdatejointPresPosAndVel(motorMapping(rbt.mfJointCmdPos));
-        rbt.ForwardKinematics(1);
-       // cout<<"forward: " <<rbt.mfLegPresPos<<endl;
-        // cout<<" present postion: ";
-        // for(int i=0;i<16;i++)
-        //         cout<<gecko.present_position[i]<<" ";
-        // cout<<endl;
-        SetPos(rbt.mfJointCmdPos,gecko,rbt.vLastSetPos);
+        // cout<<"mfLegCmdPos: \n"<<rbt.mfLegCmdPos<<"\n";//<<"mfJointCmdPos: \n"<<rbt.mfJointCmdPos<<endl;
+        for (float num : gecko.present_torque)
+        outFile << gecko.torque2current(num) << " ";
+        outFile << std::endl;
+
+        gecko.setPosition(motorMapping(rbt.mfJointCmdPos));
         gettimeofday(&endTime,NULL);
         timeUse = 1e6*(endTime.tv_sec - startTime.tv_sec) + endTime.tv_usec - startTime.tv_usec;
-        if(timeUse < 1.0/loopRateStateUpdateSend*1e6)
-          usleep(1.0/loopRateStateUpdateSend*1e6 - (double)(timeUse) - 2000); 
+        if(timeUse < 1e4)
+          usleep(1e4 - (double)(timeUse) - 10); 
 
         // if(swingtimeFlag==true){
         //     gettimeofday(&endTimeswing,NULL);

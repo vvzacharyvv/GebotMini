@@ -6,7 +6,44 @@
  * @param add The address of the file to read, like "../include/init_Motor_angle.csv"
  * @param dest Floating pointer to store datas.
  */
-void string2float(std::string add, float* dest)
+void string2float(const std::string& add, std::vector<float>& dest) {
+    std::ifstream inidata(add);
+    if (inidata) {
+        std::cout << add << " file open Successful" << std::endl;
+    } else {
+        std::cerr << add << " file open FAIL" << std::endl;
+        return;
+    }
+
+    std::string line;
+    while (std::getline(inidata, line)) {
+        size_t start = 0, end = 0;
+        while ((end = line.find(',', start)) != std::string::npos) {
+            std::string token = line.substr(start, end - start);
+            try {
+                dest.push_back(std::stof(token));
+            } catch (const std::invalid_argument& e) {
+                std::cerr << "Invalid argument: " << e.what() << " for token: " << token << std::endl;
+            } catch (const std::out_of_range& e) {
+                std::cerr << "Out of range error: " << e.what() << " for token: " << token << std::endl;
+            }
+            start = end + 1;
+        }
+        // Process the last token if there's no trailing comma
+        std::string token = line.substr(start);
+        try {
+            dest.push_back(std::stof(token));
+        } catch (const std::invalid_argument& e) {
+            std::cerr << "Invalid argument: " << e.what() << " for token: " << token << std::endl;
+        } catch (const std::out_of_range& e) {
+            std::cerr << "Out of range error: " << e.what() << " for token: " << token << std::endl;
+        }
+    }
+
+    inidata.close();
+}
+
+void string2float2(std::string add, float* dest)
 {
     char data_char[8000],*char_float;
     const char *a=",";  //Separate datas
@@ -146,7 +183,7 @@ void SetPos(Matrix<float,4,3> jointCmdPos,DxlAPI& motors,vector<float>& vLastSet
             }
         }
     }
-    float offSet[4]={0.349,1.22173,0,0};
+    float offSet[4]={0,0,0.1,0};
     // Ensure to set the last 4 positions correctly
     for (int i = 12; i < 16; ++i) {
         vLastSetPos[i] = setPos[i]+offSet[i-12];

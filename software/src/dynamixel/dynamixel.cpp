@@ -399,6 +399,45 @@ void DxlAPI::setTorque(vector<float> torVector)
     groupSyncWriteCurrent.clearParam();
 }
 
+void DxlAPI::setPD(int Pgain, int Dgain)
+{
+    uint8_t param_P[2];
+    uint8_t param_D[2];
+    bool dxl_addparam_result;
+    int dxl_comm_result;
+    int param_P_packet[MOTOR_NUM];
+    int param_D_packet[MOTOR_NUM];
+    for(int i =0;i<MOTOR_NUM;i++)
+    {
+        param_P_packet[i] = Pgain;
+        param_D_packet[i] = Dgain;
+    }
+
+    dynamixel::GroupSyncWrite groupSyncWritePgain(portHandler, packetHandler, 84, 2);
+    for(int i=0; i<MOTOR_NUM; i++)
+    {
+        param_P[0] = DXL_LOBYTE(param_P_packet[i]);
+        param_P[1] = DXL_HIBYTE(param_P_packet[i]);
+        dxl_addparam_result = groupSyncWritePgain.addParam(ID[i], param_P);
+    }
+    dxl_comm_result = groupSyncWritePgain.txPacket();
+    if (dxl_comm_result != COMM_SUCCESS) printf("%s\n", packetHandler->getTxRxResult(dxl_comm_result));
+    // Clear syncwrite parameter storage
+    groupSyncWritePgain.clearParam();
+
+    dynamixel::GroupSyncWrite groupSyncWriteDgain(portHandler, packetHandler, 80, 2);
+    for(int i=0; i<MOTOR_NUM; i++)
+    {
+        param_D[0] = DXL_LOBYTE(param_D_packet[i]);
+        param_D[1] = DXL_HIBYTE(param_D_packet[i]);
+        dxl_addparam_result = groupSyncWriteDgain.addParam(ID[i], param_D);
+    }
+    dxl_comm_result = groupSyncWriteDgain.txPacket();
+    if (dxl_comm_result != COMM_SUCCESS) printf("%s\n", packetHandler->getTxRxResult(dxl_comm_result));
+    // Clear syncwrite parameter storage
+    groupSyncWriteDgain.clearParam();
+}
+
 /**
  * @brief Get the present torque vector of motors, the feedback is given by present_torque. 
  * @note The unit adopts NM.

@@ -45,6 +45,7 @@ public:
     void torqueDisable();
     void setPosition(vector<float> posVector);
     void setTorque(vector<float> torVector);
+    void setPD(int Pgain, int Dgain);
     void getPosition();
     void getVelocity();
     void getTorque();
@@ -87,7 +88,7 @@ public:
     // XC330: X>0: Y = 2.096 * X + 0.025; X<0: Y = 2.096 * X - 0.025
     // XH540: wait for measurement
     float K_torque2current[4] = {1.2/2.69,1,2.096,1};
-    float B_torque2current[4] = {0.006,0,0.040,0};
+    float B_torque2current[4] = {0.000,0,0.000,0}; // {0.006,0,0.040,0};
     dynamixel::PortHandler *portHandler;
     dynamixel::PacketHandler *packetHandler;
 };
