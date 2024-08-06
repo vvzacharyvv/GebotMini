@@ -15,51 +15,12 @@ std::atomic<bool> runFlag(true);
 std::atomic<float> program_run_time(0.0);
 boost::lockfree::spsc_queue<vector<float>, boost::lockfree::capacity<1024>> ringBuffer_torque;
 boost::lockfree::spsc_queue<Matrix<float,3,4>, boost::lockfree::capacity<1024>> ringBuffer_force;
-
-
-void *udpConnect(void *data)
+void nextStep(CRobotControl* rbt,float t)
 {
+    
 
-	string ip = "127.0.0.1";
-	uint16_t port = 8888;
 
-	CUdpSocket srv_sock;
-	//创建套接字
-	CHECK_RET(srv_sock.Socket());
-	//绑定地址信息
-	CHECK_RET(srv_sock.Bind(ip, port));
-	while(1)
-	{
-		//接收数据
-		string buf;
-		string peer_ip;
-		uint16_t peer_port;
-		CHECK_RET(srv_sock.Recv(&buf, &peer_ip, &peer_port));
-		cout << "UpperComputer["<<peer_ip<<":"<<peer_port<<"] Command: " << buf << endl;
-        //buf match command 
-        int ret=commandJudge((char*)string("start").c_str(),(char *)buf.c_str());
-        if(ret) {runFlag=1; goto END;}
-        ret=commandJudge((char*)string("stop").c_str(),(char *)buf.c_str());
-        if(ret) {runFlag=0; goto END;}
-        ret=commandJudge((char*)string("pumpPositive").c_str(),(char *)buf.c_str());
-        if(ret) {rbt.PumpAllPositve(); goto END;}
-        ret=commandJudge((char*)string("pumpNegative").c_str(),(char *)buf.c_str());
-        if(ret) {rbt.PumpAllNegtive(); goto END;}
-        // int ret=match((char*)string("start").c_str(),(char*)string("startsada").c_str());
-        // cout<<(char*)string("start").c_str()<<endl;
-        // cout<<ret<<endl;
-		//发送数据
-        END:
-		buf.clear();
-		// cout << "server say: ";
-		// cin >> buf;
-		// CHECK_RET(srv_sock.Send(buf, peer_ip, peer_port));
-	}
-	//关闭套接字
-	srv_sock.Close();
-	return 0;
 }
-
 void *dataSave(void *data)
 {
     struct timeval startTime={0,0},endTime={0,0};
@@ -281,72 +242,6 @@ void *robotStateUpdateSend(void *data)
         rbt.PumpNegtive(i);
     usleep(1e6);
     rbt.bInitFlag = 1;
-    static float t=0.0;
-    std::string filename = "../include/legcmdpos.csv";
-    ofstream legcmdpos;
-      legcmdpos.open(filename);   // cover the old file
-    if (legcmdpos)    cout<<filename<<" file open Successful"<<endl;
-    else    cout<<filename<<" file open FAIL"<<endl;
-    usleep(1e3);
-    while(1)
-    {
-        if(runFlag){
-            struct timeval startTime={0,0},endTime={0,0};
-            double timeUse=0.0;
-            gettimeofday(&startTime,NULL);
-            //If stay static, annotate below one line.
-            if(rbt.runTimes==0){
-                if(VELX != 0)
-                    rbt.NextStep();
-                for(int i=0;i<4;i++){
-                    for(int j=0;j<3;j++)
-                    {
-                        legcmdpos<<rbt.mfLegCmdPos(i,j)<<",";
-                    }
-                    legcmdpos<<endl;
-                }
-                cout<<"rbt.legcmdpos:"<<rbt.mfLegCmdPos<<endl;
-            }
-            else{
-                       cout<<"write finished"<<endl;
-                       legcmdpos.close();legcmdpos.clear();
-                       break;
-            }
-             
-           // rbt.AirControl();
-
-           // rbt.AttitudeCorrection180();
-            /*******************vibration*************/
-            
-
-            // // 使用t
-            // t=vibration_time;    
-            // // 重置标志
-            // data_ready = false;
-            // t=program_run_time.load()-0.5; //0.5 to equal the sin curve
-            // float z=quadSprings(t,OMEGA,Y0);
-            // /************************************/
-            // rbt.mfCompensation<<0,0,z,
-            //                     0,0,z,
-            //                     0,0,z,
-            //                     0,0,z,
-
-            // rbt.ParaDeliver();
-            
-            // //cout<<"LegCmdPos:\n"<<rbt.mfLegCmdPos<<endl;    
-            // cout<<"t: "<<t<<endl;
-            // cout<<"TargetPos:\n"<<rbt.mfTargetPos<<endl<<endl; 
-            // cout<<"Compensation:\n"<<rbt.mfCompensation<<endl<<endl; 
-
-            gettimeofday(&endTime,NULL);
-            timeUse = 1e6*(endTime.tv_sec - startTime.tv_sec) + endTime.tv_usec - startTime.tv_usec;
-            if(timeUse < 1e4)
-                usleep(1.0/loopRateStateUpdateSend*1e6 - (double)(timeUse) - 10); 
-            else
-            cout<<"TimeRobotStateUpdateSend: "<<timeUse<<endl;
-        }
-    }
- 
 }
 
 void *runImpCtller(void *data)
@@ -354,6 +249,9 @@ void *runImpCtller(void *data)
     struct timeval startTime={0,0},endTime={0,0};
     double timeUse=0;
     int run_times=0;    // for debugging
+    vector<vector<float>> data;   //3*4 * 800=2400 row
+    float t;
+
 
     while(rbt.bInitFlag == 0) //wait for initial
         usleep(1e2);
@@ -382,23 +280,17 @@ void *runImpCtller(void *data)
             rbt.UpdateFtsPresVel();
             rbt.UpdateFtsPresForce(motors.present_torque);  
             ringBuffer_force.push(rbt.mfForce);
-            // cout<<"torque: ";
-            // for(auto a:motors.present_torque)
-            //     cout<<a<<" ";
-            // cout<<endl;
-            // for (size_t i = 0; i < 12; i++)
-            // {
-            //     torque[i] = rbt.dxlMotors.present_torque[i];
-            // }            
+            Matrix<float,3,4> temp;
+            temp<<data[3*100*t][0],data[3*100*t][1],data[3*100*t][2],data[3*100*t][3],
+                data[3*100*t+1][0],data[3*100*t+1][1],data[3*100*t+1][2],data[3*100*t+1][3],
+                data[3*100*t+2][0],data[3*100*t+2][1],data[3*100*t+2][2],data[3*100*t+2][3];
+
+            rbt.TargetPos=temp.transpose();
 
 
-            /*      Admittance control     */ 
-            // rbt.Control();   
-           // rbt.VibrationControl_quad(k,1,800.0/1000);
-           // rbt.InverseKinematics(rbt.mfXc);    // Admittance control
-           //  cout<<"mf Force:"<<rbt.mfForce<<endl;
-           // cout<<"xc_dotdot: \n"<<rbt.mfXcDotDot<<"; \nxc_dot: \n"<<rbt.mfXcDot<<"; \nxc: \n"<<rbt.mfXc<<endl;
-            /*      Postion control with Comp      */
+
+
+
             rbt.InverseKinematics(rbt.mfTargetPos); //    Postion control
 
             /*      Postion control      */
@@ -431,62 +323,6 @@ void *runImpCtller(void *data)
     }
   
 }
-#ifdef PRESSDETECT
-void *SvUpdate(void *data)
-{   
-    ADS1015 ads;
-    vector<int> value(4),preValue(4),prepreValue(4);
-    for(auto a:value)
-        a=0;
-    preValue=value;
-    prepreValue=value;
-    while(1){
-        if(1){
-
-        struct timeval startTime={0,0},endTime={0,0};
-        double timeUse=0.0;
-        int gain=1;
-        for(int i=0;i<4;i++)
-        {
-            value[i]=(int)ads.read_adc(i,gain);
-            usleep(10000);
-        }
-        swap(value[0],value[1]); //to fit the queue of sensor in real world;
-        // for(auto a:value)   cout<<a<<" ";
-        // cout<<endl;
-        rbt.UpdateTouchStatus(value,preValue,prepreValue);
-       
-        prepreValue=preValue;
-        preValue=value;
-
-        if(runFlag == false){
-            int count=0;
-            for(auto a:rbt.m_glLeg){
-                if(a->getTouchStatus()==true)   count++;
-            }
-            if(count == 4){
-                //rbt.autoControlFlag=true;
-                runFlag=true;
-                for (size_t i = 0; i < 4; i++)
-                {
-                    if(rbt.m_glLeg[i]->GetLegStatus()!=recover&&rbt.m_glLeg[i]->GetLegStatus()!=stance)
-                      rbt.probeTrigger[i]=false;
-                }
-            }
-        }
-
-
-        gettimeofday(&endTime,NULL);
-        timeUse = 1e6*(endTime.tv_sec - startTime.tv_sec) + endTime.tv_usec - startTime.tv_usec;
-        if(timeUse < 1e4)
-        usleep(1.0/loopRateSVRead*1e6 - (double)(timeUse) - 10); 
-        }
-
-    }
-
-}
-#endif
-
 std::vector<std::string> split(const std::string &s, char delimiter) {
     std::vector<std::string> tokens;
     std::string token;
@@ -571,50 +407,10 @@ void *timeUpdate(void *date)
 
         //计算接受程序运行时间
         double adjusted_run_time = program_run_time_vibration + timeUse2*1e-06;
-
-        // // 获取接收时间
-        // auto received_time_point = std::chrono::high_resolution_clock::now();
-        // auto received_time_t = std::chrono::high_resolution_clock::to_time_t(received_time_point);
-        // char received_time_str[100];
-        // strftime(received_time_str, sizeof(received_time_str), "%Y-%m-%d %H:%M:%S", std::gmtime(&received_time_t));
-
-        // // 解析接收到的数据
-        // double program_run_time;
-        // char sent_time_str[100];
-        // sscanf(buffer, "%lf,%31[^\n]", &program_run_time, sent_time_str);
-        // std::cout << "buffer: " << buffer << std::endl;
-        // std::cout << "senttime: " << sent_time_str << std::endl;
-
-        // // 计算传输延迟
-        // std::tm tm2 = {};
-        // strptime(sent_time_str, "%Y-%m-%d %H:%M:%S", &tm2);
-      
-        // auto sent_time_t = std::mktime(&tm2);
-        // std::chrono::duration<double> transmission_delay = std::chrono::high_resolution_clock::from_time_t(received_time_t) - std::chrono::high_resolution_clock::from_time_t(sent_time_t);
-        
-
-        // std::cout << "received_time_t: " << received_time_t << std::endl;
-        // std::cout << "Sent time_t: " << sent_time_t << std::endl;
-
-        
-        
-
-        // // 计算接收时的程序运行时间
-        // double adjusted_run_time = program_run_time + transmission_delay.count();
-
-        // std::cout << "program_run_time: " << program_run_time << std::endl;
-        // std::cout << "transmission_delay.count(): " << transmission_delay.count() << std::endl;
-
-        // std::cout << "接收到的程序运行时间: " << program_run_time << " 秒" << std::endl;
-        // std::cout << "发送时的世界时间: " << sent_time_str << std::endl;
-        // std::cout << "接收时的世界时间: " << received_time_str << std::endl;
         std::cout << "传输延迟: " << timeUse2 << " 微秒" << std::endl;
         std::cout << "接收时的程序运行时间: " << adjusted_run_time << " 微秒" << std::endl;
         std::cout << "------------------------------------------------" << std::endl;
         program_run_time.store(adjusted_run_time); 
-      
-
-
     }
 
     close(sockfd);
@@ -628,42 +424,30 @@ int main(int argc, char ** argv)
     
     pthread_t th1, th2, th3, th4,th5,th6;
 	int ret;
-    // ret = pthread_create(&th1,NULL,udpConnect,NULL);
-    // if(ret != 0)
-	// {
-	// 	printf("create pthread1 error!\n");
-	// 	exit(1);
-	// }
     ret = pthread_create(&th2,NULL,robotStateUpdateSend,NULL);
     if(ret != 0)
 	{
 		printf("create pthread2 error!\n");
 		exit(1);
 	}
-    // ret = pthread_create(&th3,NULL,runImpCtller,NULL);
-    // if(ret != 0)
-	// {
-	// 	printf("create pthread3 error!\n");
-	// 	exit(1);
-	// }
-    // ret = pthread_create(&th4,NULL,dataSave,NULL);
-    // if(ret != 0)
-	// {
-	// 	printf("create pthread4 error!\n");
-	// 	exit(1);
-	// }
-    //  ret = pthread_create(&th5,NULL,SvUpdate,NULL);
-    // if(ret != 0)
-	// {
-	// 	printf("create pthread5 error!\n");
-	// 	exit(1);
-	// }
-    //  ret = pthread_create(&th6,NULL,timeUpdate,NULL);
-    // if(ret != 0)
-	// {
-	// 	printf("create pthread6 error!\n");
-	// 	exit(1);
-	// }
+    ret = pthread_create(&th3,NULL,runImpCtller,NULL);
+    if(ret != 0)
+	{
+		printf("create pthread3 error!\n");
+		exit(1);
+	}
+    ret = pthread_create(&th4,NULL,dataSave,NULL);
+    if(ret != 0)
+	{
+		printf("create pthread4 error!\n");
+		exit(1);
+	}
+     ret = pthread_create(&th6,NULL,timeUpdate,NULL);
+    if(ret != 0)
+	{
+		printf("create pthread6 error!\n");
+		exit(1);
+	}
     pthread_join(th1, NULL);
     pthread_join(th2, NULL);
     pthread_join(th3, NULL);

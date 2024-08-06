@@ -17,6 +17,7 @@ public:
     float fTimeForGaitPeriod;  // The time of the whole period
     float fTimePeriod;  // The time of one period
     float fTimePresent;
+    int runTimes;
     Matrix<float, 4, 2> mfTimeForSwingPhase;  // startTime, endTime: LF, RF, LH, RH
     Matrix3f Ic[8]; // interia of Leg
     Matrix3f Ic_body;//interia of body

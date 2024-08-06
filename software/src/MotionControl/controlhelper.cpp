@@ -220,3 +220,21 @@ MatrixXf pinv(Eigen::MatrixXf  A,float pinvtoler)
     return X;
 
 }
+
+void writeMatrixToCSV(const std::string& filename, const Matrix<float, 4, 3>& matrix) {
+    std::ofstream file(filename, std::ios::app);
+    if (!file.is_open()) {
+        std::cerr << "Error opening file: " << filename << std::endl;
+        return;
+    }
+
+    for (int i = 0; i < matrix.rows(); ++i) {
+        for (int j = 0; j < matrix.cols(); ++j) {
+            file << matrix(i, j);
+            if (j < matrix.cols() - 1) file << ",";
+        }
+        file << "\n";
+    }
+
+    file.close();
+}

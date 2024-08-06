@@ -170,9 +170,16 @@ void CRobotControl::ChangePara(Matrix<float, 4, 3> mK, Matrix<float, 4, 3> mB, M
 void CRobotControl::VibrationControl_quad(float k, float c,float m)
 {
       c=2*m*sqrt(k/m); // xi =1
-      float a=1.0,b=250.0;
-      mfXcDotDot.col(2)=mfTargetAcc.col(2)+1*a/m*(b*k/4*(mfLegPresPos.col(2)-mfTargetPos.col(2))+c/4*(mfLegPresVel.col(2)-mfTargetVel.col(2))
+      cout<<"c"<<c<<endl;
+      float a=0.1,b=1;
+      mfTargetForce.col(2)<<0.02,0.02,0.02,0.02;
+      mfForce(2,2)/=10;
+      cout<<"mfForce: "<<mfForce<<endl;
+      mfXcDotDot.col(2)=mfTargetAcc.col(2)+1*a/m*(b*k/4*(-mfLegPresPos.col(2)+mfTargetPos.col(2))+c/4*(-mfLegPresVel.col(2)+mfTargetVel.col(2))
                         +( mfTargetForce.col(2) - mfForce.transpose().col(2)));
+      cout<<"mfTargetForce.col(2) - mfForce.transpose().col(2):"<<mfTargetForce.col(2) - mfForce.transpose().col(2)<<endl;
+      cout<<"c/4*(-mfLegPresVel.col(2)+mfTargetVel.col(2))"<<c/4*(-mfLegPresVel.col(2)+mfTargetVel.col(2))<<endl;
+      cout<<"-mfLegPresPos.col(2)+mfTargetPos.col(2)"<<-mfLegPresPos.col(2)+mfTargetPos.col(2)<<endl;
       mfXcDot =  mfLegPresVel + mfXcDotDot * (1/fCtlRate);
       for(int i=0;i<4;i++)
       mfLegCmdPos(i,2) = mfLegPresPos(i,2);

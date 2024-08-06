@@ -18,4 +18,5 @@ void SetPos(Matrix<float,4,3> jointCmdPos,DxlAPI& motors,vector<float>& vLastSet
 int match(char *P,char *T);
 int *buildNext(char *P);
 bool commandJudge(char *P,char* T);
+void writeMatrixToCSV(const std::string& filename, const Matrix<float, 4, 3>& matrix);
 #endif

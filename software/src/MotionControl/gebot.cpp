@@ -33,6 +33,7 @@ CGebot::CGebot(float length,float width,float height,float mass)
     fStancePhaseStatusPart[1]=0.9;//stance
     mfSwingVelocity.setZero();
     targetCoMPosture.setZero();
+    runTimes=0;
     BSwingPhaseStartFlag = true;
     autoControlFlag=true;
     BSwingPhaseEndFlag = 0;     //
@@ -364,13 +365,13 @@ void CGebot::UpdateJacobians()
  */
 void CGebot::UpdateFtsPresVel()
 {
-    // mfLegLastVel=mfLegPresVel;
-    // Matrix <float, 3, 1> temp_vel;
-    // for(int i=0; i<4; i++)
-    // {
-    //     temp_vel = m_glLeg[i]->GetJacobian() * mfJointPresVel.row(i).transpose();
-    //     mfLegPresVel.row(i) = temp_vel.transpose();
-    // }
+    mfLegLastVel=mfLegPresVel;
+    Matrix <float, 3, 1> temp_vel;
+    for(int i=0; i<4; i++)
+    {
+        temp_vel = m_glLeg[i]->GetJacobian() * mfJointPresVel.row(i).transpose();
+        mfLegPresVel.row(i) = temp_vel.transpose();
+    }
     
 }
 void CGebot::NextStep()
@@ -470,7 +471,12 @@ void CGebot::NextStep()
         if(m_glLeg[legNum]->GetLegStatus()!= stance) mfTimePresentForSwing(legNum) += fTimePeriod;
         else mfTimePresentForSwing(legNum) = 0;   //stance phase
     }
+     
     fTimePresent += fTimePeriod;
+     if (abs(fTimePresent - fTimeForGaitPeriod ) < 1e-4)  // check if present time has reach the gait period                                                               
+    {                                                            // if so, set it to 0.0
+       runTimes++;
+    }
 }
 
 /**

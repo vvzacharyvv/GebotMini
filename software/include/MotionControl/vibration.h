@@ -31,11 +31,12 @@ inline float find_k(float m, float omega, float Y_0,float xi = 1.0) {  // Assume
  * @param t ,y_0,omega.Y_0,func;
  * @return std::vector<float> 
  */
-inline float quadSprings(float t,float y_0,float omega,float Y_0,std::function<float(float)> func){
-    float y=func(t);
+inline float quadSprings(float t,float omega,float Y_0){
     float k,c,m;//k is stiffness, c is damping, and 𝑚 is the mass of the robot body."
     m=560.0/1000;
-    k=find_k(m,omega,Y_0);
+    // k=find_k(m,omega,Y_0);
+    k=11;
+    cout<<"k:"<<k<<endl;
     float xi,omega_0,omega_bar,alpha;
     omega_0=sqrt(k/m);
     c=2*m*omega_0;
@@ -51,7 +52,7 @@ inline float quadSprings(float t,float y_0,float omega,float Y_0,std::function<f
     float z;// robot relative displacement
     A=Y_0*(pow(omega_bar,2))/sqrt(pow((1-omega_bar),2)+pow((2*xi*omega_bar),2));
     theta = acos((1-pow(omega_bar,2))/sqrt(pow((1-omega_bar),2)+pow((2*xi*omega_bar),2)));
-    z=A*sin(omega*t-theta);
+    z=A*sin(omega*t-theta-PI/2);
     return z;
 
 }

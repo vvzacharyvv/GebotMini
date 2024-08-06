@@ -30,10 +30,10 @@
 #define loopRateCommandUpdate 100.0   //hz
 #define loopRateStateUpdateSend 20.0   //hz
 #define loopRateImpCtller 100.0   //hz
-#define loopRateDataSave 100 //hz
-#define loopRateSVRead   20.0//hz
-#define VELX 0.0/1000    // mm  step length = VELX * timeForStancePhase        
-#define TimePeriod 0.05
+#define loopRateDataSave 100.0 //hz
+#define loopRateSVRead   100.0//hz
+#define VELX 4.0/1000    // mm  step length = VELX * timeForStancePhase        
+#define TimePeriod 0.01
 #define TimeForGaitPeriod 8.0
 #define PI 3.1415926
 #define THREHOLDLF 1000//800
@@ -43,7 +43,7 @@
 #define ATTACHDIS_MAX 20.0/1000
 #define ATTACH_TIMES  4
 #define PrePsotiveFactor 0.04
-#define OMEGA 4*PI
+#define OMEGA PI
 #define Y0 30.0/1000
 
 
@@ -70,6 +70,8 @@
 #include<fstream>
 #include<sstream>
 #include<bitset>
+#include <mutex>
+#include <condition_variable>
 #include"vibration.h"
 #ifdef  VMCCONTROL
   #include <qpOASES.hpp>
