@@ -25,12 +25,12 @@ CGebot::CGebot(float length,float width,float height,float mass)
         attchTimes[i]=ATTACH_TIMES;
     }
     
-    fSwingPhaseStatusPart[0]=0.4; //detach
+    fSwingPhaseStatusPart[0]=0.2; //detach
     fSwingPhaseStatusPart[1]=0.2; //swingUp
     fSwingPhaseStatusPart[2]=0.2; //swingDown
-     fSwingPhaseStatusPart[3]=0.3; //attach
-    fStancePhaseStatusPart[0]=0.1;//recover  
-    fStancePhaseStatusPart[1]=0.9;//stance
+    fSwingPhaseStatusPart[3]=0.3; //attach
+    fSwingPhaseStatusPart[4]=0.1;//recover
+    fStancePhaseStatusPart[0]=1;//stance
     mfSwingVelocity.setZero();
     targetCoMPosture.setZero();
     runTimes=0;
@@ -115,16 +115,19 @@ void CGebot::SetPhase(float tP, float tFGP, Matrix<float,4,2> tFSP)
         iStatusCounterBuffer[legNum][int(swingUp)] = floor(fTimeForSwing[legNum] / fTimePeriod * fSwingPhaseStatusPart[1]);
         iStatusCounterBuffer[legNum][int(swingDown)] = floor(fTimeForSwing[legNum] / fTimePeriod * fSwingPhaseStatusPart[2]);
         iStatusCounterBuffer[legNum][int(attach)] = floor(fTimeForSwing[legNum] / fTimePeriod * fSwingPhaseStatusPart[3]);
-        iStatusCounterBuffer[legNum][int(recover)] = floor( (fTimeForGaitPeriod - fTimeForSwing[legNum]) / fTimePeriod * fStancePhaseStatusPart[0]);
-        iStatusCounterBuffer[legNum][int(stance)] = floor( (fTimeForGaitPeriod - fTimeForSwing[legNum]) / fTimePeriod * fStancePhaseStatusPart[1]);
+        iStatusCounterBuffer[legNum][int(recover)] = floor( ( fTimeForSwing[legNum]) / fTimePeriod * fSwingPhaseStatusPart[4]);
+        iStatusCounterBuffer[legNum][int(stance)] = floor( (fTimeForGaitPeriod - fTimeForSwing[legNum]) / fTimePeriod * fStancePhaseStatusPart[0]);
     }
-    
+     cout<<"fTimePeriod"<<fTimePeriod<<endl;
+     cout<<"fSwingPhaseStatusPart[4]"<<fSwingPhaseStatusPart[4]<<endl;
+      cout<<"fTimeForSwing[legNum]"<<fTimeForSwing[0]<<endl;
+    cout<<"iStatusCounterBuffer[legNum][int(recover)]"<<iStatusCounterBuffer[0][int(recover)]<<endl;
     fSwPSFactor[0]=fSwingPhaseStatusPart[0];
     fSwPSFactor[1]=fSwPSFactor[0]+fSwingPhaseStatusPart[1];
     fSwPSFactor[2]=fSwPSFactor[1]+fSwingPhaseStatusPart[2];
     fSwPSFactor[3]=fSwPSFactor[2]+fSwingPhaseStatusPart[3];
+    fSwPSFactor[4]=fSwPSFactor[3]+fSwingPhaseStatusPart[4];
     fStPSFactor[0]=fStancePhaseStatusPart[0];
-    fStPSFactor[1]=fStPSFactor[0]+fStancePhaseStatusPart[1];
     for(uint8_t legNum=0; legNum<4; legNum++) 
     {
         if(fTimePresent - mfTimeForSwingPhase(legNum,0) >=  0 &&  fTimePresent - mfTimeForSwingPhase(legNum,0) <  fTimeForSwing[legNum] * fSwPSFactor[0] )
@@ -147,18 +150,15 @@ void CGebot::SetPhase(float tP, float tFGP, Matrix<float,4,2> tFSP)
             iStatusCounter[legNum] = floor((fTimeForSwing[legNum] * fSwPSFactor[3] - (fTimePresent-mfTimeForSwingPhase(legNum,0)) ) / fTimePeriod);
             m_glLeg[legNum]->ChangeStatus(attach);
         }
+          else if(fTimePresent - mfTimeForSwingPhase(legNum,0) >=  fTimeForSwing[legNum] * fSwPSFactor[3] &&  fTimePresent - mfTimeForSwingPhase(legNum,0) <  fTimeForSwing[legNum] * fSwPSFactor[4] )
+		{
+            iStatusCounter[legNum] = floor((fTimeForSwing[legNum] * fSwPSFactor[4] - (fTimePresent-mfTimeForSwingPhase(legNum,0)) ) / fTimePeriod);
+            m_glLeg[legNum]->ChangeStatus(recover);
+        }
         else //stance phase
 		{
-            if( fTimePresent + fTimeForGaitPeriod - mfTimeForStancePhase(legNum,0) < (fTimeForGaitPeriod - fTimeForSwing[legNum]) * fStPSFactor[0] )
-            {
-                iStatusCounter[legNum] = floor(((fTimeForGaitPeriod - fTimeForSwing[legNum]) * fStPSFactor[0] - (fTimePresent + fTimeForGaitPeriod - mfTimeForStancePhase(legNum,0)))/ fTimePeriod);
-                m_glLeg[legNum]->ChangeStatus(recover);
-            }
-            else 
-            {
-                iStatusCounter[legNum] = floor(((fTimeForGaitPeriod - fTimeForSwing[legNum]) * fStPSFactor[1] - (fTimePresent + fTimeForGaitPeriod - mfTimeForStancePhase(legNum,0))) / fTimePeriod);
-                m_glLeg[legNum]->ChangeStatus(stance);
-            }
+            iStatusCounter[legNum] = floor(((fTimeForGaitPeriod - fTimeForSwing[legNum]) * fStPSFactor[0] - (fTimePresent + fTimeForGaitPeriod - mfTimeForStancePhase(legNum,0))) / fTimePeriod);
+            m_glLeg[legNum]->ChangeStatus(stance);
         }
     }  
 
@@ -224,23 +224,22 @@ void CGebot::UpdateLegStatus(int legNum)
         case attach:
             m_glLeg[legNum]->ChangeStatus(recover);
             iStatusCounter[legNum] = iStatusCounterBuffer[legNum][int(recover)];
+           
+        
+            break;
+        case recover:
+            m_glLeg[legNum]->ChangeStatus(stance);
+            iStatusCounter[legNum] = iStatusCounterBuffer[legNum][int(stance)];
             mfStancePhaseStartPos(legNum) = mfLegCmdPos(legNum);
             for(int pos=0; pos<3; pos++)
                     targetCoMPosition(legNum, pos) = 0.0;
             BSwingPhaseEndFlag = true;
-            touchTrigger[legNum]=false;
-            attchTimes[legNum]=ATTACH_TIMES;
-            break;
-        case recover:
-            m_glLeg[legNum]->ChangeStatus(stance);
-            iStatusCounter[legNum] = iStatusCounterBuffer[legNum][int(stance)]-attchDis[legNum];
-            attchDis[legNum]=0;
             break;
         case stance:
             m_glLeg[legNum]->ChangeStatus(detach);
             iStatusCounter[legNum] = iStatusCounterBuffer[legNum][int(detach)];
             mfStancePhaseEndPos(legNum) = mfLegCmdPos(legNum);
-            mfSwingVelocity = -(mfStancePhaseEndPos.row(legNum) - mfStancePhaseStartPos.row(legNum)) / (iStatusCounterBuffer[legNum][(int)detach] + iStatusCounterBuffer[legNum][(int)swingUp] + iStatusCounterBuffer[legNum][(int)swingDown]) ;
+            mfSwingVelocity = -(mfStancePhaseEndPos.row(legNum) - mfStancePhaseStartPos.row(legNum)) / (iStatusCounterBuffer[legNum][(int)detach] + iStatusCounterBuffer[legNum][(int)swingUp] + iStatusCounterBuffer[legNum][(int)swingDown]+  iStatusCounterBuffer[legNum][(int)recover]);
             BSwingPhaseStartFlag = true;
             break;
         }

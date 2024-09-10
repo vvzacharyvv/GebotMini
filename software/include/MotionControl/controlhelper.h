@@ -9,6 +9,7 @@ enum enum_LEGNAME{LF,RF,LH,RH};
 enum enum_CONTROLMODE{ADMITTANCE,IMPEDANCE};
 void string2float2(std::string add, float* dest);
 void string2float(const std::string& add, std::vector<float>& dest);
+void readCSV(const std::string& filename, std::vector<std::vector<float>>& data);
 void printSvStatus(unsigned char svStatus);
 vector<float> motorMapping(Matrix<float,4,3> jointCmdPos);
 Matrix<float,4,4> inverseMotorMapping(vector<float> motorPos);

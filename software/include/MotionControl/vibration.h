@@ -52,7 +52,7 @@ inline float quadSprings(float t,float omega,float Y_0){
     float z;// robot relative displacement
     A=Y_0*(pow(omega_bar,2))/sqrt(pow((1-omega_bar),2)+pow((2*xi*omega_bar),2));
     theta = acos((1-pow(omega_bar,2))/sqrt(pow((1-omega_bar),2)+pow((2*xi*omega_bar),2)));
-    z=A*sin(omega*t-theta-PI/2);
+    z=A*sin(omega*t-theta);
     return z;
 
 }

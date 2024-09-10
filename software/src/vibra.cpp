@@ -15,12 +15,7 @@ std::atomic<bool> runFlag(true);
 std::atomic<float> program_run_time(0.0);
 boost::lockfree::spsc_queue<vector<float>, boost::lockfree::capacity<1024>> ringBuffer_torque;
 boost::lockfree::spsc_queue<Matrix<float,3,4>, boost::lockfree::capacity<1024>> ringBuffer_force;
-void nextStep(CRobotControl* rbt,float t)
-{
-    
 
-
-}
 void *dataSave(void *data)
 {
     struct timeval startTime={0,0},endTime={0,0};
@@ -33,11 +28,11 @@ void *dataSave(void *data)
     int status[4];
 
     //data_IMU.open(add, ios::app); // All outputs are attached to the end of the file.
-    // data_IMU.open(add);   // cover the old file
-    // if (data_IMU)    cout<<add<<" file open Successful"<<endl;
-    // else    cout<<add<<" file open FAIL"<<endl;
-    // data_IMU<<"Angle_pitch_roll_yaw:"<<endl;
-    // usleep(1e3);
+    data_IMU.open(add);   // cover the old file
+    if (data_IMU)    cout<<add<<" file open Successful"<<endl;
+    else    cout<<add<<" file open FAIL"<<endl;
+    data_IMU<<"Angle_pitch_roll_yaw:"<<endl;
+    usleep(1e3);
 
     add="../include/data_Force.csv";
     data_Force.open(add);   // cover the old file
@@ -55,12 +50,12 @@ void *dataSave(void *data)
 
     while(rbt.bInitFlag == 0) //wait for initial
         usleep(1e2);
-    //  rbt.UpdateImuData();
-    // for (int i = 0; i < 3; i++)
-    //     fAngleZero[i] = rbt.api.fAngle[i];
-    // WitCaliRefAngle();                               //  归零失败
-    // u16 xx = rbt.api.fAngle[0] * 32768.0f / 180.0f;  
-    // WitWriteReg(XREFROLL, xx); //sReg[Roll]          //  归零失败
+     rbt.UpdateImuData();
+    for (int i = 0; i < 3; i++)
+        fAngleZero[i] = rbt.api.fAngle[i];
+    WitCaliRefAngle();                               //  归零失败
+    u16 xx = rbt.api.fAngle[0] * 32768.0f / 180.0f;  
+    WitWriteReg(XREFROLL, xx); //sReg[Roll]          //  归零失败
 	while(1)
 	{
         if(runFlag)
@@ -86,12 +81,12 @@ void *dataSave(void *data)
             // for (size_t i = 0; i < 4; i++)
             //     status[i]=rbt.m_glLeg[i]->GetLegStatus();
             //write data
-            // for (int i = 0; i < 3; i++)
-            // {
-            //     data_IMU<<rbt.api.fAngle[i]-fAngleZero[i]<<",";  
-            //     // cout<<"angle_"<<i<<": "<<rbt.api.fAngle[i]-fAngleZero[i]<<endl;
-            // }
-            // data_IMU<<endl;
+            for (int i = 0; i < 3; i++)
+            {
+                data_IMU<<rbt.api.fAngle[i]-fAngleZero[i]<<",";  
+                // cout<<"angle_"<<i<<": "<<rbt.api.fAngle[i]-fAngleZero[i]<<endl;
+            }
+            data_IMU<<endl;
             // for (int i = 0; i < 3; i++)
             //     for (int j = 0; j < 4; j++)
             //         data_Force<<rbt.mfForce(i, j)<<",";  
@@ -249,13 +244,13 @@ void *runImpCtller(void *data)
     struct timeval startTime={0,0},endTime={0,0};
     double timeUse=0;
     int run_times=0;    // for debugging
-    vector<vector<float>> data;   //3*4 * 800=2400 row
-    float t;
+    vector<vector<float>> filedata;   //3*4 * 800=2400 row
 
-
+    readCSV("../include/filtered_legtrace43.csv",filedata);
+    int t=200;
     while(rbt.bInitFlag == 0) //wait for initial
         usleep(1e2);
-
+    
     //rbt.dxlMotors.torqueEnable();
     // float k=find_k(560.0/1000,OMEGA,Y0);
     // cout<<"k = " <<k<<endl;
@@ -265,33 +260,40 @@ void *runImpCtller(void *data)
         {
             gettimeofday(&startTime,NULL);
             /* get motors data  */
-            motors.getTorque();
-            ringBuffer_torque.push(motors.present_torque);
+            // motors.getTorque();
+            // ringBuffer_torque.push(motors.present_torque);
             
-            motors.getPosition();
-            motors.getVelocity();
+            // motors.getPosition();
+            // motors.getVelocity();
         
-            /* update the data IMP need */
-            rbt.UpdatejointPresPosAndVel(motors.present_position);         
-            rbt.ForwardKinematics(1);
-            rbt.UpdateJacobians();
+            // /* update the data IMP need */
+            // rbt.UpdatejointPresPosAndVel(motors.present_position);         
+            // rbt.ForwardKinematics(1);
+            // rbt.UpdateJacobians();
           
 
-            rbt.UpdateFtsPresVel();
-            rbt.UpdateFtsPresForce(motors.present_torque);  
-            ringBuffer_force.push(rbt.mfForce);
-            Matrix<float,3,4> temp;
-            temp<<data[3*100*t][0],data[3*100*t][1],data[3*100*t][2],data[3*100*t][3],
-                data[3*100*t+1][0],data[3*100*t+1][1],data[3*100*t+1][2],data[3*100*t+1][3],
-                data[3*100*t+2][0],data[3*100*t+2][1],data[3*100*t+2][2],data[3*100*t+2][3];
-
-            rbt.TargetPos=temp.transpose();
-
-
-
-
-
-            rbt.InverseKinematics(rbt.mfTargetPos); //    Postion control
+            // rbt.UpdateFtsPresVel();
+            // rbt.UpdateFtsPresForce(motors.present_torque);  
+            // ringBuffer_force.push(rbt.mfForce);
+             Matrix<float,4,3> temp;
+             if (t<800){
+                temp<<filedata[4*t][0],filedata[4*t][1],filedata[4*t][2],
+                filedata[4*t+1][0],filedata[4*t+1][1],filedata[4*t+1][2],
+                filedata[4*t+2][0],filedata[4*t+2][1],filedata[4*t+2][2],
+                filedata[4*t+3][0],filedata[4*t+3][1],filedata[4*t+3][2];
+                cout<<"temp:"<<temp<<endl;
+             }
+           
+            if(t>=0&&t<30) rbt.PumpPositive(1);
+            else if(t>50&&t<180) rbt.PumpNegtive(1);
+            else if(t>190&&t<230) rbt.PumpPositive(3);
+            else if(t>250&&t<380) rbt.PumpNegtive(3);
+            else if(t>390&&t<430) rbt.PumpPositive(0);
+            else if(t>450&&t<580) rbt.PumpNegtive(0);
+            else if(t>590&&t<630) rbt.PumpPositive(2);
+            else if(t>650&&t<780) rbt.PumpNegtive(2);
+            cout<<"t: "<<t<<endl;
+            rbt.InverseKinematics(temp); //    Postion control
 
             /*      Postion control      */
              //rbt.InverseKinematics(rbt.mfLegCmdPos); 
@@ -303,7 +305,7 @@ void *runImpCtller(void *data)
             //cout<<"force:"<<endl<<rbt.mfForce.transpose()<<endl;
             // cout<<"xc_dotdot: \n"<<rbt.mfXcDotDot<<"; \nxc_dot: \n"<<rbt.mfXcDot<<"; \nxc: \n"<<rbt.mfXc<<endl;
             // cout<<endl;
-
+       
             /*      Set joint angle      */
             SetPos(rbt.mfJointCmdPos,motors,rbt.vLastSetPos);
 
@@ -317,6 +319,7 @@ void *runImpCtller(void *data)
             timeUse = 1e6*(endTime.tv_sec - startTime.tv_sec) + endTime.tv_usec - startTime.tv_usec;
             if(timeUse < 1e4)
                 usleep(1.0/loopRateImpCtller*1e6 - (double)(timeUse) - 10); 
+            t=t+1;
             // else
             //     cout<<"timeImpCtller: "<<timeUse<<endl;
         }
@@ -411,6 +414,7 @@ void *timeUpdate(void *date)
         std::cout << "接收时的程序运行时间: " << adjusted_run_time << " 微秒" << std::endl;
         std::cout << "------------------------------------------------" << std::endl;
         program_run_time.store(adjusted_run_time); 
+        if(fabs(program_run_time.load()-0.5)<0.1)   runFlag.store(true);
     }
 
     close(sockfd);

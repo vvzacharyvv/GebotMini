@@ -1,3 +1,4 @@
+
 #include"robotcontrol.h"
 #include "ADS1x15.h"
 #include <iostream>
@@ -282,7 +283,7 @@ void *robotStateUpdateSend(void *data)
     usleep(1e6);
     rbt.bInitFlag = 1;
     static float t=0.0;
-    std::string filename = "../include/legcmdpos.csv";
+    std::string filename = "../include/recoverinswing.csv";
     ofstream legcmdpos;
       legcmdpos.open(filename);   // cover the old file
     if (legcmdpos)    cout<<filename<<" file open Successful"<<endl;
@@ -640,12 +641,12 @@ int main(int argc, char ** argv)
 		printf("create pthread2 error!\n");
 		exit(1);
 	}
-    // ret = pthread_create(&th3,NULL,runImpCtller,NULL);
-    // if(ret != 0)
-	// {
-	// 	printf("create pthread3 error!\n");
-	// 	exit(1);
-	// }
+    ret = pthread_create(&th3,NULL,runImpCtller,NULL);
+    if(ret != 0)
+	{
+		printf("create pthread3 error!\n");
+		exit(1);
+	}
     // ret = pthread_create(&th4,NULL,dataSave,NULL);
     // if(ret != 0)
 	// {

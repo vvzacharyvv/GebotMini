@@ -294,7 +294,14 @@ void DxlAPI::setPosition(vector<float> posVector)
     }
     dxl_comm_result = groupSyncWritePosition.txPacket();
     if (dxl_comm_result != COMM_SUCCESS) printf("%s\n", packetHandler->getTxRxResult(dxl_comm_result));
-
+      cout<<setw(30)<<"portHandler"
+        <<setw(30)<<"packetHandler"
+        <<setw(30)<<"ADDR_PRO_GOAL_POSITION"
+        <<setw(30)<<"ADDR_PRO_GOAL_POSITION_LENGTH"<<endl;
+     cout<<setw(30)<<portHandler
+        <<setw(30)<<packetHandler
+        <<setw(30)<<ADDR_PRO_GOAL_POSITION
+        <<setw(30)<<ADDR_PRO_GOAL_POSITION_LENGTH<<endl;
     // Clear syncwrite parameter storage
     groupSyncWritePosition.clearParam();
 }

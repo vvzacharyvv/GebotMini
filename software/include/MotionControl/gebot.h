@@ -24,8 +24,9 @@ public:
     Vector3f Pc[8]; //com of each link ;relate to pre aixs;
     Vector3f Pc_body;//com of body ,relate to base aixs;
     float fSwingStatus[4][3];  //swing status,dettach - swing -attach , sum = 1;
-    float fSwingPhaseStatusPart[4];   //swing phase status, dettach - swingUp - swingDown - attach , sum = 1;
-    float fStancePhaseStatusPart[2];  // //stance phase status, recover - stance , sum = 1;
+
+    float fSwingPhaseStatusPart[5];   //swing phase status, dettach - swingUp - swingDown - attach , sum = 1;
+    float fStancePhaseStatusPart[1];  // //stance phase status, recover - stance , sum = 1;
     int iStatusCounter[4], iStatusCounterBuffer[4][6];
     float Tsu,Tst; //time of swing up and stance,its fixed
     float v_swingDown,v_rec ;
@@ -43,7 +44,8 @@ public:
     Matrix<float, 4, 2> mfTimeForStancePhase;
     Matrix<float, 4, 3> targetCoMPosition;
     Matrix<float, 4, 3> targetCoMPosture;
-    //end 
+    //end
+ 
     Matrix<float, 4, 1> mfTimePresentForSwing;
     Matrix<float, 4, 4> mfShoulderPos;  // X-Y: LF, RF, LH, RH
     Matrix<float, 4, 3> mfStancePhaseStartPos;
@@ -62,6 +64,7 @@ public:
     Matrix<float, 1, 3> mfSwingVelocity;
     Matrix<float, 4, 3> mfJointCompDis;  // compensation joint angle
     Matrix<float, 4, 3> mfCompensation;
+   
     bool BSwingPhaseStartFlag, BSwingPhaseEndFlag;
     vector<float> vLastSetPos;
     CGebot(float length,float width,float height,float mass);
@@ -81,6 +84,7 @@ public:
     void UpdateLegStatus(int legNum);
     void AttitudeCorrection180();
     void AttitudeCorrection90();
+    
     //robot control
     //pump control
      uint8_t svStatus=0b00000000;

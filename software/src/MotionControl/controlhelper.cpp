@@ -62,7 +62,32 @@ void string2float2(std::string add, float* dest)
     }
     inidata.close();
 }
+void readCSV(const std::string& filename, std::vector<std::vector<float>>& data) {
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        std::cerr << "Error opening file: " << filename << std::endl;
+        return;
+    }
+    else cout<<filename<<" open success!"<<endl;
 
+    std::string line;
+    int i=0;
+    while (std::getline(file, line)) {
+        std::vector<float> row;
+        std::stringstream ss(line);
+        std::string value;
+
+        while (std::getline(ss, value, ',')) {
+            row.push_back(std::stof(value));
+        }
+
+        data.push_back(row);
+        cout<<"row "<<i<<"has been read"<<endl;
+        i++;
+    }
+
+    file.close();
+}
 void printSvStatus(unsigned char svStatus)
 {   
     std::cout<<"svStatus="<<!!((svStatus<<0)&0b10000000);
