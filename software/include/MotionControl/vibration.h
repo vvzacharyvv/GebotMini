@@ -36,7 +36,7 @@ inline float quadSprings(float t,float omega,float Y_0){
     m=560.0/1000;
     // k=find_k(m,omega,Y_0);
     k=11;
-    cout<<"k:"<<k<<endl;
+   // cout<<"k:"<<k<<endl;
     float xi,omega_0,omega_bar,alpha;
     omega_0=sqrt(k/m);
     c=2*m*omega_0;

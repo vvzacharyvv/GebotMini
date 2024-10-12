@@ -82,6 +82,8 @@ public:
     vector<float> present_position;
     vector<float> present_torque;
     vector<float> present_velocity;
+    void setVelocity(vector<float> velVector);
+    void setAcceleration(vector<int> accVector);
     // current-torque relationship X: torque Y: current
     // XM430: X>0: Y = 1.2 * (X/2.69) + 0.006; X<0: Y = 1.2 * (X/2.69) - 0.006
     // XL330: not good

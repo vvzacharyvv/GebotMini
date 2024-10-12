@@ -294,14 +294,76 @@ void DxlAPI::setPosition(vector<float> posVector)
     }
     dxl_comm_result = groupSyncWritePosition.txPacket();
     if (dxl_comm_result != COMM_SUCCESS) printf("%s\n", packetHandler->getTxRxResult(dxl_comm_result));
-      cout<<setw(30)<<"portHandler"
-        <<setw(30)<<"packetHandler"
-        <<setw(30)<<"ADDR_PRO_GOAL_POSITION"
-        <<setw(30)<<"ADDR_PRO_GOAL_POSITION_LENGTH"<<endl;
-     cout<<setw(30)<<portHandler
-        <<setw(30)<<packetHandler
-        <<setw(30)<<ADDR_PRO_GOAL_POSITION
-        <<setw(30)<<ADDR_PRO_GOAL_POSITION_LENGTH<<endl;
+    //   cout<<setw(30)<<"portHandler"
+    //     <<setw(30)<<"packetHandler"
+    //     <<setw(30)<<"ADDR_PRO_GOAL_POSITION"
+    //     <<setw(30)<<"ADDR_PRO_GOAL_POSITION_LENGTH"<<endl;
+    //  cout<<setw(30)<<portHandler
+    //     <<setw(30)<<packetHandler
+    //     <<setw(30)<<ADDR_PRO_GOAL_POSITION
+    //     <<setw(30)<<ADDR_PRO_GOAL_POSITION_LENGTH<<endl;
+    // Clear syncwrite parameter storage
+    groupSyncWritePosition.clearParam();
+}
+
+/**
+ * @brief Set the initial velocity vector of motors.
+ * @param velVector: the target velocity vector,
+ * 
+ * @note The unit adopts rad/s.
+ */
+void DxlAPI::setVelocity(vector<float> velVector) // late creation function
+{
+    int vel[MOTOR_NUM];
+    uint8_t param_goal_vel[4];
+    bool dxl_addparam_result;
+    int dxl_comm_result;
+    //calculate ang 
+
+    for(int i =0; i<MOTOR_NUM; i++)
+        vel[i]=60*velVector[i]/(0.229*2*3.1416);
+    dynamixel::GroupSyncWrite groupSyncWritePosition(portHandler, packetHandler, ADDR_PRO_PROFILE_VELOCITY, ADDR_PRO_PROFILE_VELOCITY_LENGTH);
+    for(int i=0; i<MOTOR_NUM; i++)
+    {
+        param_goal_vel[0] = DXL_LOBYTE(DXL_LOWORD(vel[i]));
+        param_goal_vel[1] = DXL_HIBYTE(DXL_LOWORD(vel[i]));
+        param_goal_vel[2] = DXL_LOBYTE(DXL_HIWORD(vel[i]));
+        param_goal_vel[3] = DXL_HIBYTE(DXL_HIWORD(vel[i]));
+        dxl_addparam_result = groupSyncWritePosition.addParam(ID[i], param_goal_vel);
+    }
+    dxl_comm_result = groupSyncWritePosition.txPacket();
+    if (dxl_comm_result != COMM_SUCCESS) printf("%s\n", packetHandler->getTxRxResult(dxl_comm_result));
+    // Clear syncwrite parameter storage
+    groupSyncWritePosition.clearParam();
+}
+
+/**
+ * @brief Set the initial setAcceleration vector of motors.
+ * @param accVector: the target setAcceleration vector,
+ * 
+ * @note The unit adopts rad^2/s.
+ */
+void DxlAPI::setAcceleration(vector<int> accVector) // late creation function 如果知道单位再用float
+{
+    int acc[MOTOR_NUM];
+    uint8_t param_goal_acc[4];
+    bool dxl_addparam_result;
+    int dxl_comm_result;
+    //calculate ang 
+
+    for(int i =0; i<MOTOR_NUM; i++)
+        acc[i]=accVector[i];             //acc[i]=60*accVector[i]/(0.229*2*3.1416);
+    dynamixel::GroupSyncWrite groupSyncWritePosition(portHandler, packetHandler, ADDR_PRO_PROFILE_ACCELERATION, ADDR_PRO_PROFILE_ACCELERATION_LENGTH);
+    for(int i=0; i<MOTOR_NUM; i++)
+    {
+        param_goal_acc[0] = DXL_LOBYTE(DXL_LOWORD(acc[i]));
+        param_goal_acc[1] = DXL_HIBYTE(DXL_LOWORD(acc[i]));
+        param_goal_acc[2] = DXL_LOBYTE(DXL_HIWORD(acc[i]));
+        param_goal_acc[3] = DXL_HIBYTE(DXL_HIWORD(acc[i]));
+        dxl_addparam_result = groupSyncWritePosition.addParam(ID[i], param_goal_acc);
+    }
+    dxl_comm_result = groupSyncWritePosition.txPacket();
+    if (dxl_comm_result != COMM_SUCCESS) printf("%s\n", packetHandler->getTxRxResult(dxl_comm_result));
     // Clear syncwrite parameter storage
     groupSyncWritePosition.clearParam();
 }

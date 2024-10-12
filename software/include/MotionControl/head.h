@@ -13,9 +13,9 @@
 // #define CompDisA3 30*0.001  
 // #define CompDisALL 16*0.001     // Compensation of Distance  AttitudeCorrection() All stace phase
 /* Position control */
-#define StepHeight_F  18.0/1000   //swingUp
-#define StepHeight_H  18.0/1000   //swingUp
-#define Press  19.0/1000.0  //19.0/1000        //attach press 7
+#define StepHeight_F  20.0/1000   //swingUp
+#define StepHeight_H  20.0/1000   //swingUp
+#define Press  0.0/1000.0  //19.0/1000        //attach press 7
 #define CompDisA1 -4.0/1000.0   // Compensation of Distance in AttitudeCorrection() with Amble gait
 #define CompDisA2 20.0/1000.0 
 #define CompDisA3 20.0/1000.0   
@@ -32,7 +32,7 @@
 #define loopRateImpCtller 100.0   //hz
 #define loopRateDataSave 100.0 //hz
 #define loopRateSVRead   100.0//hz
-#define VELX 4.0/1000    // mm  step length = VELX * timeForStancePhase        
+#define VELX 3.0/1000    // mm  step length = VELX * timeForStancePhase        
 #define TimePeriod 0.01
 #define TimeForGaitPeriod 8.0
 #define PI 3.1415926

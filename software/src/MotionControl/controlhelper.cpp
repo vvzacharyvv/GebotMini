@@ -215,7 +215,8 @@ void SetPos(Matrix<float,4,3> jointCmdPos,DxlAPI& motors,vector<float>& vLastSet
     }
 
     motors.setPosition(vLastSetPos);
- 
+    // cout<<"vlastsetpos: " << vLastSetPos <<endl;
+    cout<<"2"<<endl;
 }
 
 MatrixXf pinv(Eigen::MatrixXf  A,float pinvtoler)

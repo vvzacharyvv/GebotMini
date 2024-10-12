@@ -62,8 +62,8 @@ void CLeg::UpdateJacobian()
         m_mfJacobian(0, 2)=- m_fL2*(cos(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta1)*cos(m_fTheta2)*cos(m_fTheta3)) - m_fL3*sin(m_fTheta4)*(cos(m_fTheta1)*cos(m_fTheta2)*sin(m_fTheta3) + cos(m_fTheta1)*cos(m_fTheta3)*sin(m_fTheta2));
         m_mfJacobian(0, 3)=-m_fL3*(sin(m_fTheta1)*sin(m_fTheta4) + cos(m_fTheta4)*(cos(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta1)*cos(m_fTheta2)*cos(m_fTheta3)));
         m_mfJacobian(1, 0)= m_fL3*(cos(m_fTheta4)*sin(m_fTheta1) - sin(m_fTheta4)*(cos(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta1)*cos(m_fTheta2)*cos(m_fTheta3))) + m_fL2*(cos(m_fTheta1)*cos(m_fTheta2)*sin(m_fTheta3) + cos(m_fTheta1)*cos(m_fTheta3)*sin(m_fTheta2)) + m_fL1*cos(m_fTheta1)*cos(m_fTheta2);
-        m_mfJacobian(1, 2)= - m_fL2*(sin(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta2)*cos(m_fTheta3)*sin(m_fTheta1)) - m_fL3*sin(m_fTheta4)*(cos(m_fTheta2)*sin(m_fTheta1)*sin(m_fTheta3) + cos(m_fTheta3)*sin(m_fTheta1)*sin(m_fTheta2)) - m_fL1*sin(m_fTheta1)*sin(m_fTheta2);
-        m_mfJacobian(1, 1)=- m_fL2*(sin(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta2)*cos(m_fTheta3)*sin(m_fTheta1)) - m_fL3*sin(m_fTheta4)*(cos(m_fTheta2)*sin(m_fTheta1)*sin(m_fTheta3) + cos(m_fTheta3)*sin(m_fTheta1)*sin(m_fTheta2));
+        m_mfJacobian(1, 1)= - m_fL2*(sin(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta2)*cos(m_fTheta3)*sin(m_fTheta1)) - m_fL3*sin(m_fTheta4)*(cos(m_fTheta2)*sin(m_fTheta1)*sin(m_fTheta3) + cos(m_fTheta3)*sin(m_fTheta1)*sin(m_fTheta2)) - m_fL1*sin(m_fTheta1)*sin(m_fTheta2);      
+        m_mfJacobian(1, 2)=- m_fL2*(sin(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta2)*cos(m_fTheta3)*sin(m_fTheta1)) - m_fL3*sin(m_fTheta4)*(cos(m_fTheta2)*sin(m_fTheta1)*sin(m_fTheta3) + cos(m_fTheta3)*sin(m_fTheta1)*sin(m_fTheta2));
         m_mfJacobian(1, 3)= m_fL3*(cos(m_fTheta1)*sin(m_fTheta4) - cos(m_fTheta4)*(sin(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta2)*cos(m_fTheta3)*sin(m_fTheta1)));
         m_mfJacobian(2, 0)=0;
         m_mfJacobian(2, 1)= - m_fL2*sin(m_fTheta2 + m_fTheta3) - m_fL1*cos(m_fTheta2) - m_fL3*cos(m_fTheta2 + m_fTheta3)*sin(m_fTheta4);
@@ -95,8 +95,8 @@ void CLeg::UpdateJacobian()
         m_mfJacobian(0, 2)=-m_fL3*(sin(m_fTheta1)*sin(m_fTheta4) + cos(m_fTheta4)*(cos(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta1)*cos(m_fTheta2)*cos(m_fTheta3)));
         m_mfJacobian(0, 3)=m_fL3*(cos(m_fTheta4)*sin(m_fTheta1) - sin(m_fTheta4)*(cos(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta1)*cos(m_fTheta2)*cos(m_fTheta3))) - m_fL2*(cos(m_fTheta1)*cos(m_fTheta2)*sin(m_fTheta3) + cos(m_fTheta1)*cos(m_fTheta3)*sin(m_fTheta2)) + m_fL1*cos(m_fTheta1)*cos(m_fTheta2);
         m_mfJacobian(1, 0)= m_fL3*(cos(m_fTheta4)*sin(m_fTheta1) - sin(m_fTheta4)*(cos(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta1)*cos(m_fTheta2)*cos(m_fTheta3))) - m_fL2*(cos(m_fTheta1)*cos(m_fTheta2)*sin(m_fTheta3) + cos(m_fTheta1)*cos(m_fTheta3)*sin(m_fTheta2)) + m_fL1*cos(m_fTheta1)*cos(m_fTheta2);
-        m_mfJacobian(1, 2)=m_fL2*(sin(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta2)*cos(m_fTheta3)*sin(m_fTheta1)) - m_fL3*sin(m_fTheta4)*(cos(m_fTheta2)*sin(m_fTheta1)*sin(m_fTheta3) + cos(m_fTheta3)*sin(m_fTheta1)*sin(m_fTheta2));
         m_mfJacobian(1, 1)=m_fL2*(sin(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta2)*cos(m_fTheta3)*sin(m_fTheta1)) - m_fL3*sin(m_fTheta4)*(cos(m_fTheta2)*sin(m_fTheta1)*sin(m_fTheta3) + cos(m_fTheta3)*sin(m_fTheta1)*sin(m_fTheta2)) - m_fL1*sin(m_fTheta1)*sin(m_fTheta2);
+        m_mfJacobian(1, 2)=m_fL2*(sin(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta2)*cos(m_fTheta3)*sin(m_fTheta1)) - m_fL3*sin(m_fTheta4)*(cos(m_fTheta2)*sin(m_fTheta1)*sin(m_fTheta3) + cos(m_fTheta3)*sin(m_fTheta1)*sin(m_fTheta2));
         m_mfJacobian(1, 3)=m_fL3*(cos(m_fTheta1)*sin(m_fTheta4) - cos(m_fTheta4)*(sin(m_fTheta1)*sin(m_fTheta2)*sin(m_fTheta3) - cos(m_fTheta2)*cos(m_fTheta3)*sin(m_fTheta1)));
         m_mfJacobian(2, 0)=0;
         m_mfJacobian(2, 1)=m_fL2*sin(m_fTheta2 + m_fTheta3) - m_fL1*cos(m_fTheta2) - m_fL3*cos(m_fTheta2 + m_fTheta3)*sin(m_fTheta4);

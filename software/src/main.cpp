@@ -7,12 +7,11 @@
 #include <atomic>
 #include <boost/lockfree/spsc_queue.hpp>
 
-
-
 #define CHECK_RET(q) if((q)==false){return 0;}
 CRobotControl rbt(110.0,60.0,20.0,800.0,ADMITTANCE);
 DxlAPI motors("/dev/ttyAMA0", 1000000, rbt.ID, 2);
-std::atomic<bool> runFlag(true);
+// std::atomic<bool> runFlag(true); 
+bool runFlag = 1;
 std::atomic<float> program_run_time(0.0);
 boost::lockfree::spsc_queue<vector<float>, boost::lockfree::capacity<1024>> ringBuffer_torque;
 boost::lockfree::spsc_queue<Matrix<float,3,4>, boost::lockfree::capacity<1024>> ringBuffer_force;
@@ -178,12 +177,16 @@ void *robotStateUpdateSend(void *data)
     Matrix<float,4,2> TimeForSwingPhase;
     Matrix<float, 4, 3> InitPos;
     Matrix<float, 6,1> TCV;
+    vector<float>initialMotorVel(16,80);
+    vector<int>initialMotorAcc(16,80);
     TCV << VELX, 0, 0,0,0,0 ;// X, Y , alpha 
     
     
     //motors initial
     motors.setOperatingMode(3);
     motors.torqueEnable();
+    motors.setVelocity(initialMotorVel);
+    motors.setAcceleration(initialMotorAcc);
     motors.getPosition();
 #if(INIMODE==1)
     vector<float> init_Motor_angle(12);
@@ -271,7 +274,6 @@ void *robotStateUpdateSend(void *data)
   
 #if(INIMODE==2)  
     SetPos(rbt.mfJointCmdPos,motors,rbt.vLastSetPos);
-    cout<<"rbt.mfJointCmdPos:"<<rbt.mfJointCmdPos<<endl;
     rbt.UpdateJacobians();
     // float k=find_k(560.0/1000,OMEGA,Y0);
     // cout<<"k = " <<k<<endl;
@@ -279,15 +281,16 @@ void *robotStateUpdateSend(void *data)
 #endif
     usleep(1e5);
     for (size_t i = 0; i < 4; i++)
-        rbt.PumpNegtive(i);
+        //rbt.PumpNegtive(i);
+        rbt.PumpAllPositve();
     usleep(1e6);
     rbt.bInitFlag = 1;
     static float t=0.0;
-    std::string filename = "../include/recoverinswing.csv";
-    ofstream legcmdpos;
-      legcmdpos.open(filename);   // cover the old file
-    if (legcmdpos)    cout<<filename<<" file open Successful"<<endl;
-    else    cout<<filename<<" file open FAIL"<<endl;
+   // std::string filename = "../include/recoverinswing.csv";
+    // ofstream legcmdpos;
+    //   legcmdpos.open(filename);   // cover the old file
+    // if (legcmdpos)    cout<<filename<<" file open Successful"<<endl;
+    // else    cout<<filename<<" file open FAIL"<<endl;
     usleep(1e3);
     while(1)
     {
@@ -296,25 +299,27 @@ void *robotStateUpdateSend(void *data)
             double timeUse=0.0;
             gettimeofday(&startTime,NULL);
             //If stay static, annotate below one line.
-            if(rbt.runTimes==0){
-                if(VELX != 0)
-                    rbt.NextStep();
-                for(int i=0;i<4;i++){
-                    for(int j=0;j<3;j++)
-                    {
-                        legcmdpos<<rbt.mfLegCmdPos(i,j)<<",";
-                    }
-                    legcmdpos<<endl;
-                }
-                cout<<"rbt.legcmdpos:"<<rbt.mfLegCmdPos<<endl;
-            }
-            else{
-                       cout<<"write finished"<<endl;
-                       legcmdpos.close();legcmdpos.clear();
-                       break;
-            }
+            // if(rbt.runTimes==0){
+          
+            rbt.NextStep();
+            
+
+            //     for(int i=0;i<4;i++){
+            //         for(int j=0;j<3;j++)
+            //         {
+            //             legcmdpos<<rbt.mfLegCmdPos(i,j)<<",";
+            //         }
+            //         legcmdpos<<endl;
+            //     }
+            //     cout<<"rbt.legcmdpos:"<<rbt.mfLegCmdPos<<endl;
+            // }
+            // else{
+            //            cout<<"write finished"<<endl;
+            //            legcmdpos.close();legcmdpos.clear();
+            //            break;
+            // }
              
-           // rbt.AirControl();
+           rbt.AirControl();
 
            // rbt.AttitudeCorrection180();
             /*******************vibration*************/
@@ -324,19 +329,21 @@ void *robotStateUpdateSend(void *data)
             // t=vibration_time;    
             // // 重置标志
             // data_ready = false;
-            // t=program_run_time.load()-0.5; //0.5 to equal the sin curve
-            // float z=quadSprings(t,OMEGA,Y0);
-            // /************************************/
-            // rbt.mfCompensation<<0,0,z,
-            //                     0,0,z,
-            //                     0,0,z,
-            //                     0,0,z,
+            t=program_run_time.load()-0.5; //0.5 to equal the sin curve
+           // cout<<"t"<<t<<endl;
+           float z=quadSprings(t,OMEGA,Y0);
+            cout<<"z:"<<z<<endl;
+            /************************************/
+            rbt.mfCompensation<<0,0,z,
+                                0,0,z,
+                                0,0,z,
+                                0,0,z;
 
-            // rbt.ParaDeliver();
+             rbt.ParaDeliver();
             
             // //cout<<"LegCmdPos:\n"<<rbt.mfLegCmdPos<<endl;    
             // cout<<"t: "<<t<<endl;
-            // cout<<"TargetPos:\n"<<rbt.mfTargetPos<<endl<<endl; 
+             cout<<"TargetPos:\n"<<rbt.mfTargetPos<<endl<<endl; 
             // cout<<"Compensation:\n"<<rbt.mfCompensation<<endl<<endl; 
 
             gettimeofday(&endTime,NULL);
@@ -399,11 +406,11 @@ void *runImpCtller(void *data)
            // rbt.InverseKinematics(rbt.mfXc);    // Admittance control
            //  cout<<"mf Force:"<<rbt.mfForce<<endl;
            // cout<<"xc_dotdot: \n"<<rbt.mfXcDotDot<<"; \nxc_dot: \n"<<rbt.mfXcDot<<"; \nxc: \n"<<rbt.mfXc<<endl;
-            /*      Postion control with Comp      */
+            // /*      Postion control with Comp      */
             rbt.InverseKinematics(rbt.mfTargetPos); //    Postion control
 
             /*      Postion control      */
-             //rbt.InverseKinematics(rbt.mfLegCmdPos); 
+           // rbt.InverseKinematics(rbt.mfLegCmdPos); 
            // cout<<"mfLegCmdPos:\n"<<rbt.mfLegCmdPos<<endl;
             //cout<<"mfJointCmdPos:\n"<<rbt.mfJointCmdPos<<endl;
             // cout<<"mfLegCmdPos: \n"<<rbt.mfLegCmdPos<<endl;
@@ -414,6 +421,7 @@ void *runImpCtller(void *data)
             // cout<<endl;
 
             /*      Set joint angle      */
+          //  cout<<"-------------------------------------------"<<endl;
             SetPos(rbt.mfJointCmdPos,motors,rbt.vLastSetPos);
 
             /*      Impedance control      */
@@ -426,8 +434,8 @@ void *runImpCtller(void *data)
             timeUse = 1e6*(endTime.tv_sec - startTime.tv_sec) + endTime.tv_usec - startTime.tv_usec;
             if(timeUse < 1e4)
                 usleep(1.0/loopRateImpCtller*1e6 - (double)(timeUse) - 10); 
-            // else
-            //     cout<<"timeImpCtller: "<<timeUse<<endl;
+            else
+                cout<<"timeImpCtller: "<<timeUse<<endl;
         }
     }
   
@@ -510,7 +518,7 @@ void *timeUpdate(void *date)
     struct sockaddr_in client_addr;
     memset(&client_addr, 0, sizeof(client_addr));
     client_addr.sin_family = AF_INET;
-    client_addr.sin_addr.s_addr = inet_addr("192.168.137.88"); // 从机的IP地址
+    client_addr.sin_addr.s_addr = inet_addr("192.168.137.27"); // 从机的IP地址
     client_addr.sin_port = htons(65432); // 和主机程序发送数据的端口一致
 
     // 绑定socket
@@ -562,7 +570,6 @@ void *timeUpdate(void *date)
             std::cout << token << std::endl;
         }
 
-
         std::cout << "startTime2.tv_sec: " << startTime2.tv_sec << std::endl;
         std::cout << "startTime2.tv_usec: " << startTime2.tv_usec << std::endl;
         std::cout << "program_run_time_vibration: " << program_run_time_vibration << std::endl;
@@ -597,7 +604,7 @@ void *timeUpdate(void *date)
         // std::cout << "received_time_t: " << received_time_t << std::endl;
         // std::cout << "Sent time_t: " << sent_time_t << std::endl;
 
-        
+
         
 
         // // 计算接收时的程序运行时间
@@ -620,9 +627,40 @@ void *timeUpdate(void *date)
 
     close(sockfd);
     return 0;
-
-
 }
+
+// void *test(void *date){
+
+//     std::vector<float> TempPosition;
+//     for(int i=0;i<15;++i)
+//         TempPosition.push_back(0.0);
+//     TempPosition.push_back(1.0);
+//     while(1)
+//     {
+//         motors.setPosition(TempPosition);
+//     }
+
+// }
+
+// int main(int argc, char ** argv){
+
+//     pthread_t th7;
+//     int ret;
+//     ret = pthread_create(&th7,NULL,test,NULL);
+//     if(ret != 0)
+//     {
+//         printf("create pthread1 error!\n");
+//         exit(1);
+//     }
+//     pthread_join(th7, NULL);
+
+//     while(1);
+
+    
+    
+//     return 0;
+// }
+
 int main(int argc, char ** argv)
 {   
     
@@ -647,29 +685,29 @@ int main(int argc, char ** argv)
 		printf("create pthread3 error!\n");
 		exit(1);
 	}
-    // ret = pthread_create(&th4,NULL,dataSave,NULL);
-    // if(ret != 0)
-	// {
-	// 	printf("create pthread4 error!\n");
-	// 	exit(1);
-	// }
+    ret = pthread_create(&th4,NULL,dataSave,NULL);
+    if(ret != 0)
+	{
+		printf("create pthread4 error!\n");
+		exit(1);
+	}
     //  ret = pthread_create(&th5,NULL,SvUpdate,NULL);
     // if(ret != 0)
 	// {
 	// 	printf("create pthread5 error!\n");
 	// 	exit(1);
 	// }
-    //  ret = pthread_create(&th6,NULL,timeUpdate,NULL);
-    // if(ret != 0)
-	// {
-	// 	printf("create pthread6 error!\n");
-	// 	exit(1);
-	// }
+     ret = pthread_create(&th6,NULL,timeUpdate,NULL);
+    if(ret != 0)
+	{
+		printf("create pthread6 error!\n");
+		exit(1);
+	}
     pthread_join(th1, NULL);
     pthread_join(th2, NULL);
     pthread_join(th3, NULL);
     pthread_join(th4, NULL);
-    //pthread_join(th5, NULL);
+    pthread_join(th5, NULL);
     while(1);
 
     
