@@ -1,4 +1,5 @@
 #include "controlhelper.h"
+#include <string>
 /**
  * @brief 
  * Open the file to read float data to dest.    
@@ -208,15 +209,15 @@ void SetPos(Matrix<float,4,3> jointCmdPos,DxlAPI& motors,vector<float>& vLastSet
             }
         }
     }
-    float offSet[4]={0,0,0.1,0};
+
     // Ensure to set the last 4 positions correctly
+    float offSet[]= OFFSET;
     for (int i = 12; i < 16; ++i) {
         vLastSetPos[i] = setPos[i]+offSet[i-12];
     }
 
     motors.setPosition(vLastSetPos);
     // cout<<"vlastsetpos: " << vLastSetPos <<endl;
-    cout<<"2"<<endl;
 }
 
 MatrixXf pinv(Eigen::MatrixXf  A,float pinvtoler)
@@ -227,7 +228,7 @@ MatrixXf pinv(Eigen::MatrixXf  A,float pinvtoler)
     int col = A.cols();
     int k = std::min(row, col);
     Eigen::MatrixXf X = Eigen::MatrixXf::Zero(col, row);
-    Eigen::MatrixXf singularValues_inv = svd.singularValues();//奇异值
+    Eigen::MatrixXf singularValues_inv = svd.singularValues();//奇异倄1�7
     Eigen::MatrixXf singularValues_inv_mat = Eigen::MatrixXf::Zero(col, row);
     for (long i = 0; i < k; ++i) {
         if (singularValues_inv(i) > pinvtoler)

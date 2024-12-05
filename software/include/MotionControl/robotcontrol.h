@@ -52,9 +52,15 @@ public:
     Matrix<float,3,1> vfVmcAngelAccDBase;
     Matrix<float,3,1> vfVmcOmegaDBase;
     Matrix<float,3,1> vfVmcOmegaBase;
+    Matrix<float,4,3> mfGravityForce;
+    Matrix<float,4,3> mfSpringForce;
+    Matrix<float,4,3> mfOutForce;
     void CalVmcCom();
+    void CalGravity();
+    void CalSpringForce();
+    void CaloutForce();
     void UpdateImuData();
-
+    void CalTargetForce();
 
 };
 #endif

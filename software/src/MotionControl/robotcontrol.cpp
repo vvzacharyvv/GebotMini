@@ -81,13 +81,13 @@ void CRobotControl::UpdateFtsPresForce(vector<float> present_torque)
         mfForce.col(i) = ForceLPF * mfLastForce.col(i) + (1-ForceLPF) *pinv(m_glLeg[i]->GetJacobian().transpose(),8e-6) * temp.row(i).transpose();
         // cout<<m_glLeg[i]->GetJacobian().transpose().inverse() <<" ";
     }  
-    // static int t=0;
-    // t++;
-    // if(t%8==0){
-    //     cout<<"force= "<<mfForce.col(1).transpose();
-    //     cout<<"\t torque= " <<temp.row(1)<<endl;
-    //     t=1;
-    // }
+    static int t=0;
+    t++;
+    if(t%16==0){
+        cout<<"RF= "<<mfForce.col(1).transpose()<<endl;
+        cout<<"LF= "<<mfForce.col(0).transpose()<<endl;
+        t=1;
+    }
         
     mfLastForce = mfForce;
 }
@@ -104,7 +104,7 @@ void CRobotControl::UpdateTargTor(Matrix<float, 3, 4> force)
  */
 void CRobotControl::ParaDeliver()
 {
-    mfTargetPos = mfLegCmdPos + mfCompensation;
+    mfTargetPos = mfLegCmdPos+ mfCompensation;
     #ifdef  VMCCONTROL
     CalVmcCom();
         for(uint8_t legNum=0; legNum<4; legNum++) //{detach=0, swingUp=1, swingDown=2, attach=3, recover=4, stance=5}; 
@@ -125,6 +125,8 @@ void CRobotControl::ParaDeliver()
     
     for(uint8_t legNum=0; legNum<4; legNum++) //{detach=0, swingUp=1, swingDown=2, attach=3, recover=4, stance=5}; 
     {   
+        float k=6.5,d=1;
+        float force = k*(mfLegCmdPos(legNum,2)-mfLegPresPos(legNum,2))+d*(mfLegPresPos(legNum,2) - mfLegLastPos(legNum,2));
         switch(m_glLeg[legNum]->GetLegStatus())
         {
             case 0: mfTargetForce.row(legNum) << 0, 0, 0 ; //-2.0, 0, -1.6;//-0.6, 0, -1.6;   //stance
@@ -133,7 +135,7 @@ void CRobotControl::ParaDeliver()
             break;
             case 2: mfTargetForce.row(legNum) << 0, 0, 1.5;      //detach
             break;
-            case 3: mfTargetForce.row(legNum) << 0, 0, -1.6;     //attach
+            case 3: mfTargetForce.row(legNum) << 0, 0, -2.0;     //attach
             break;
         }
     }
@@ -188,6 +190,7 @@ void CRobotControl::VibrationControl_quad(float k, float c,float m)
 
 void CRobotControl::Control()
 {
+    mfTargetForce.col(2)= mfTargetForce.col(2)/10;
     if(m_eControlMode == IMPEDANCE)  // Impedance control
     {
         mfXcDot = (mfLegPresPos - mfLegLastPos) * fCtlRate;
@@ -216,6 +219,7 @@ void CRobotControl::Control()
             switch(m_glLeg[legNum]->GetLegStatus())
             {
                 case stance:  //stance
+                    
                 case recover: // or recover
                     mfXcDotDot.row(legNum) =  mfTargetAcc.row(legNum) 
                     + mfKstance.row(legNum).cwiseProduct(mfTargetPos.row(legNum) - mfLegPresPos.row(legNum))
@@ -255,10 +259,10 @@ void CRobotControl::Control()
                     break;
             }
             // cout<<stepFlag[legNum]<<endl;
-             mfXcDotDot.row(legNum) =  mfTargetAcc.row(legNum) 
-            + mfKattach.row(legNum).cwiseProduct(mfTargetPos.row(legNum) - mfLegPresPos.row(legNum))
-            + mfBattach.row(legNum).cwiseProduct(mfTargetVel.row(legNum) - mfLegPresVel.row(legNum)) 
-            + mfMattach.row(legNum).cwiseInverse().cwiseProduct( mfTargetForce.row(legNum) - mfForce.transpose().row(legNum) );
+            //  mfXcDotDot.row(legNum) =  mfTargetAcc.row(legNum) 
+            // + mfKattach.row(legNum).cwiseProduct(mfTargetPos.row(legNum) - mfLegPresPos.row(legNum))
+            // + mfBattach.row(legNum).cwiseProduct(mfTargetVel.row(legNum) - mfLegPresVel.row(legNum)) 
+            // + mfMattach.row(legNum).cwiseInverse().cwiseProduct( mfTargetForce.row(legNum) - mfForce.transpose().row(legNum) );
         }
         mfXcDot =  mfLegPresVel + mfXcDotDot * (1/fCtlRate);
         mfXc =  mfLegPresPos + (mfXcDot * (1/fCtlRate));
@@ -267,6 +271,165 @@ void CRobotControl::Control()
     }
 
 }
+void CRobotControl::CalTargetForce(){
+    int stanceCount=0;
+    std::vector<int> stanceLegNum;
+    for(int legNum=0;legNum<4;legNum++)
+    {
+        if(m_glLeg[legNum]->GetLegStatus()==stance||m_glLeg[legNum]->GetLegStatus()==recover)
+        { 
+        stanceLegNum.push_back(legNum);
+        }
+
+    }
+    stanceCount=(int)stanceLegNum.size();
+    for(int i=0;i<stanceCount;i++)
+        mfTargetForce.row(stanceLegNum[i])<<mfOutForce.row(stanceLegNum[i]);
+    cout<<"mfTargetForce"<<mfTargetForce<<endl;
+}
+void CRobotControl::CalGravity(){
+    Matrix<float,3,3> mfTempASM; 
+    bool isOk=1;
+    int stanceCount=0;
+    int stanceUsefulCount=0;
+    std::vector<int> stanceLegNum;
+    Matrix<float,3,1> stanceAccumlate;
+    stanceAccumlate.setZero();
+    for(int legNum=0;legNum<4;legNum++)
+    {
+        if(m_glLeg[legNum]->GetLegStatus()==stance||m_glLeg[legNum]->GetLegStatus()==recover)
+        { 
+        stanceLegNum.push_back(legNum);
+        }
+
+    }
+    stanceCount=(int)stanceLegNum.size();
+    vfGravity<<0,0,-9.8;
+    vfVmcb61<<m_fMass*(vfGravity),0,0,0;
+    //cout<<"vfVmcb61:"<<vfVmcb61<<endl;
+
+    int k=3*stanceCount;
+    mfTempASM.setZero();
+    mfVmcS66.setIdentity(6,6);
+    mfVmcS66=mfVmcS66*100;
+    mfVmcW.setIdentity(k,k);
+    for(int i=0; i<4; i++)
+    {
+        mfFtsPosASM.push_back(mfTempASM);
+    }
+    for(int i=0; i<4; i++)
+    {
+    mfTempASM << 0, -mfLegCmdPos(i, 2), mfLegCmdPos(i, 1), mfLegCmdPos(i, 2), 0, -mfLegCmdPos(i, 0), -mfLegCmdPos(i, 1), mfLegCmdPos(i, 0), 0;
+    mfFtsPosASM[i] = mfTempASM;
+    }
+    mfVmcA.resize(6,k);
+    for(int i=0;i<stanceCount;i++)
+    {
+        mfVmcA.block<3,3>(0,i*3)<<MatrixXf::Identity(3, 3);
+        mfVmcA.block<3,3>(3,i*3)<<mfFtsPosASM[stanceLegNum[i]];
+    }
+    mfVmcH.resize(k,k);
+    vfVmcg3c1.resize(k,1);
+    mfVmcH=2*mfVmcA.transpose()*mfVmcS66*mfVmcA+2*mfVmcW;
+    vfVmcg3c1=-2*mfVmcA.transpose()*mfVmcS66*vfVmcb61;
+    // cout<<"mfVmcA:"<<mfVmcA<<endl;
+    // cout<<"mfVmcS66:"<<mfVmcS66<<endl;
+    // cout<<"vfVmcb61:"<<vfVmcb61<<endl;
+    // cout<<"k="<<k<<endl;
+    //qp
+    qpOASES::Options options;
+    options.initialStatusBounds = qpOASES::ST_INACTIVE;
+	options.numRefinementSteps = 3;
+	options.enableCholeskyRefactorisation = 1;
+
+    qpOASES::QProblemB qpPrograme(k);
+    qpPrograme.setOptions(options);
+    qpOASES::real_t qp_H[k*k]={};
+    qpOASES::real_t qp_g[k]={};
+    // qpOASES::real_t lb[6]={-200,-200,-200,-200,-200,-200};
+    // qpOASES::real_t ub[6]={200,200,200,200,200,200};
+    qpOASES::real_t lb[k]={};
+    qpOASES::real_t ub[k]={};
+    
+        for(int i=0; i<k; i++)
+    {
+        qp_g[i] = vfVmcg3c1(i,0);
+        lb[i]=-200;
+        ub[i]=200;
+        for(int j=0; j<k; j++)
+        {
+        qp_H[i*k+j] = mfVmcH(i,j);
+        }
+    }
+    qpOASES::int_t nWSR = 10;
+//     cout<<"H:";
+//    for(int i=0; i<k; i++)W
+//    {
+//     for(int j=0; j<k; j++)
+//     {
+//     cout<<qp_H[k*i+j]<<" ";
+//     }
+//     cout<<endl;
+//    }
+//    cout<<"g:";
+//    for(int i=0; i<k; i++)
+//    {
+//          cout<<qp_g[i]<<" ";
+//    }
+//     cout<<endl;
+//     cout<<"ub";
+//    for(int i=0; i<k; i++)
+//    {
+//          cout<<ub[i]<<" ";
+//    }
+//     cout<<"lb";
+//      cout<<endl;
+//    for(int i=0; i<k; i++)
+//    {
+//          cout<<lb[i]<<" ";
+//    }
+//     cout<<endl;
+    qpPrograme.init(qp_H,qp_g,lb,ub,nWSR,0);
+    qpOASES::real_t xOpt[k];
+  
+	qpPrograme.getPrimalSolution( xOpt );
+    cout<<"xopt:"<<endl;  
+    for(int i=0;i<3*stanceCount;i+=3)
+    {
+       mfGravityForce.row(stanceLegNum[i/3])<<xOpt[i],xOpt[i+1],xOpt[i+2];
+       cout<<"legNum:"<<stanceLegNum[i/3]<<" "<<xOpt[i]<<" "<<xOpt[i+1]<<" "<<xOpt[i+2]<<endl;
+    }
+    cout<<endl;
+
+  
+
+}
+void CRobotControl::CalSpringForce(){
+        float K[4]={1,1,1,1};
+        float D[4]={1,1,1,1};
+        int stanceCount=0;
+        std::vector<int> stanceLegNum;
+        for(int legNum=0;legNum<4;legNum++)
+        {
+            if(m_glLeg[legNum]->GetLegStatus()==stance||m_glLeg[legNum]->GetLegStatus()==recover)
+            { 
+            stanceLegNum.push_back(legNum);
+            }
+
+        }
+        stanceCount=(int)stanceLegNum.size();
+        Matrix<float, 1,3> TCV;
+        TCV<<VELX,0,0;
+        for(int i=0;i<stanceCount;i++){//
+            Matrix<float, 1,3> force=K[stanceLegNum[i]]*(mfLegCmdPos.row(stanceLegNum[i])-mfLegPresPos.row(stanceLegNum[i]))+D[stanceLegNum[i]]*(TCV-mfLegPresVel.row(stanceLegNum[i]));
+            mfSpringForce.row(stanceLegNum[i])<<force;
+        cout<<"mfSpringForce"<<mfSpringForce<<endl;
+        }
+   }
+    void CRobotControl::CaloutForce(){
+        mfOutForce=mfGravityForce+mfSpringForce;
+
+    }
 #ifdef  VMCCONTROL
 void CRobotControl::CalVmcCom()
 {
@@ -282,15 +445,12 @@ void CRobotControl::CalVmcCom()
         if(m_glLeg[legNum]->GetLegStatus()==stance)
         { 
         stanceLegNum.push_back(legNum);
-       // Matrix<float,3,1> temp_vel = m_glLeg[legNum]->GetJacobian() * mfJointPresPos.row(legNum).transpose();
-       // mfLegPresVel.row(legNum) = temp_vel.transpose();
             for(int i=0;i<3;i++)
             {
                 //cout<<"legPre"<<legNum<<" 's "<<i<<": "<<mfLegPresVel.row(legNum)[i]<<"  "<<"legLast"<<legNum<<" 's "<<i<<": "<<mfLegLastVel.row(legNum)[i]<<"  ";
                 //cout<<endl;
                 if((mfLegPresVel.row(legNum)[i]-mfLegLastVel.row(legNum)[i])/mfLegLastVel.row(legNum)[i]>0.3||(mfLegPresVel.row(legNum)[i]-mfLegLastVel.row(legNum)[i])/mfLegLastVel.row(legNum)[i]<-0.3)
                 isOk=0;
-            
                 if(i==2)
                     {
                         if(isOk)

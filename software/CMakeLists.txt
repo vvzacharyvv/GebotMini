@@ -61,6 +61,9 @@ file(GLOB TEST
 file(GLOB VIBRA
      "./src/vibra.cpp"
 )
+file(GLOB IMUTEST
+     "./src/imutest.cpp"
+)
 # ADD_EXECUTABLE(main ${MAIN} ${MOTIONCONTROL_SRC} )
 # target_link_libraries(main /usr/local/lib/libqpOASES.a)
 
@@ -75,3 +78,6 @@ file(GLOB VIBRA
 
 # ADD_EXECUTABLE(vibra ${VIBRA} ${SVPUMPIMU_SRC} ${INA219_SRC} ${MOTIONCONTROL_SRC} ${DYNAMIXEL_SRC}) 
 # target_link_libraries(vibra -lwiringPi ${DYNAMIXELLIB} /usr/local/lib/libqpOASES.a -lpthread)
+
+# ADD_EXECUTABLE(imutest ${IMUTEST} ${SVPUMPIMU_SRC} ${INA219_SRC} ${MOTIONCONTROL_SRC} ${DYNAMIXEL_SRC}) 
+# target_link_libraries(imutest -lwiringPi ${DYNAMIXELLIB} /usr/local/lib/libqpOASES.a -lpthread)

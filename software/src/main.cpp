@@ -9,9 +9,9 @@
 
 #define CHECK_RET(q) if((q)==false){return 0;}
 CRobotControl rbt(110.0,60.0,20.0,800.0,ADMITTANCE);
-DxlAPI motors("/dev/ttyAMA0", 1000000, rbt.ID, 2);
+DxlAPI motors("/dev/ttyAMA0", 3000000, rbt.ID, 2);
 // std::atomic<bool> runFlag(true); 
-bool runFlag = 1;
+bool runFlag = 0;
 std::atomic<float> program_run_time(0.0);
 boost::lockfree::spsc_queue<vector<float>, boost::lockfree::capacity<1024>> ringBuffer_torque;
 boost::lockfree::spsc_queue<Matrix<float,3,4>, boost::lockfree::capacity<1024>> ringBuffer_force;
@@ -24,7 +24,7 @@ void *udpConnect(void *data)
 	uint16_t port = 8888;
 
 	CUdpSocket srv_sock;
-	//创建套接字
+	//创建套接孄1�71ￄ1�771ￄ1�71ￄ1�777
 	CHECK_RET(srv_sock.Socket());
 	//绑定地址信息
 	CHECK_RET(srv_sock.Bind(ip, port));
@@ -48,14 +48,14 @@ void *udpConnect(void *data)
         // int ret=match((char*)string("start").c_str(),(char*)string("startsada").c_str());
         // cout<<(char*)string("start").c_str()<<endl;
         // cout<<ret<<endl;
-		//发送数据
+		//发��数捄1�71ￄ1�771ￄ1�71ￄ1�777
         END:
 		buf.clear();
 		// cout << "server say: ";
 		// cin >> buf;
 		// CHECK_RET(srv_sock.Send(buf, peer_ip, peer_port));
 	}
-	//关闭套接字
+	//关闭套接孄1�71ￄ1�771ￄ1�71ￄ1�777
 	srv_sock.Close();
 	return 0;
 }
@@ -65,18 +65,19 @@ void *dataSave(void *data)
     struct timeval startTime={0,0},endTime={0,0};
     double timeUse=0.0;;
     ofstream data_IMU, data_Force, data_Torque;
-    string add="../include/data_IMU.csv";
     float fAngleZero[3], fDataForce[12];//fDataTorque[16];
     Matrix<float,3,4> mDataForce;
-    std::vector<float> fDataTorque;
+    std::vector<float> fDataTorque(16);
     int status[4];
 
-    //data_IMU.open(add, ios::app); // All outputs are attached to the end of the file.
-    // data_IMU.open(add);   // cover the old file
-    // if (data_IMU)    cout<<add<<" file open Successful"<<endl;
-    // else    cout<<add<<" file open FAIL"<<endl;
-    // data_IMU<<"Angle_pitch_roll_yaw:"<<endl;
-    // usleep(1e3);
+    usleep(1e4);
+    string add="../include/IMU.csv";
+   // data_IMU.open(add, ios::app); // All outputs are attached to the end of the file.
+    data_IMU.open(add);   // cover the old file
+    if (data_IMU)    cout<<add<<" file open Successful"<<endl;
+    else    cout<<add<<" file open FAIL"<<endl;
+    data_IMU<<"Angle_pitch_roll_yaw:"<<endl;
+    usleep(1e3);
 
     add="../include/data_Force.csv";
     data_Force.open(add);   // cover the old file
@@ -94,19 +95,19 @@ void *dataSave(void *data)
 
     while(rbt.bInitFlag == 0) //wait for initial
         usleep(1e2);
-    //  rbt.UpdateImuData();
-    // for (int i = 0; i < 3; i++)
-    //     fAngleZero[i] = rbt.api.fAngle[i];
-    // WitCaliRefAngle();                               //  归零失败
-    // u16 xx = rbt.api.fAngle[0] * 32768.0f / 180.0f;  
-    // WitWriteReg(XREFROLL, xx); //sReg[Roll]          //  归零失败
+     rbt.UpdateImuData();
+    for (int i = 0; i < 3; i++)
+        fAngleZero[i] = rbt.api.fAngle[i];
+    WitCaliRefAngle();                               //  归零失败
+    u16 xx = rbt.api.fAngle[0] * 32768.0f / 180.0f;  
+    WitWriteReg(XREFROLL, xx); //sReg[Roll]          //  归零失败
 	while(1)
 	{
         if(runFlag)
         {
             gettimeofday(&startTime,NULL);
             //record data       Prevent simultaneous access to the same memory!
-         //    rbt.UpdateImuData();
+             rbt.UpdateImuData();
         //       for(int i=0; i<4;i++)
         // {
         //     cout<<" "<<rbt.m_glLeg[i]->getTouchStatus()<<" ";
@@ -117,41 +118,45 @@ void *dataSave(void *data)
          
             // for (int i = 0; i < 16; i++)
             //     fDataTorque[i]=motors.present_torque[i];
-            ringBuffer_torque.pop(fDataTorque);
-            ringBuffer_force.pop(mDataForce);
-            for (int i = 0; i < 3; i++)
-             for (int j = 0; j < 4; j++)
-              fDataForce[i*4+j]=mDataForce(i, j);  
+            // cout<<"num:"<<ringBuffer_torque.read_available()<<endl;
+            // if(!ringBuffer_torque.empty())
+            //     ringBuffer_torque.pop(fDataTorque);
+               
+            // if(!ringBuffer_force.empty())
+            //     ringBuffer_force.pop(mDataForce);
+            // for (int i = 0; i < 3; i++)
+            //  for (int j = 0; j < 4; j++)
+            //   fDataForce[i*4+j]=mDataForce(i, j);  
             // for (size_t i = 0; i < 4; i++)
             //     status[i]=rbt.m_glLeg[i]->GetLegStatus();
             //write data
-            // for (int i = 0; i < 3; i++)
-            // {
-            //     data_IMU<<rbt.api.fAngle[i]-fAngleZero[i]<<",";  
-            //     // cout<<"angle_"<<i<<": "<<rbt.api.fAngle[i]-fAngleZero[i]<<endl;
-            // }
-            // data_IMU<<endl;
-            // for (int i = 0; i < 3; i++)
-            //     for (int j = 0; j < 4; j++)
-            //         data_Force<<rbt.mfForce(i, j)<<",";  
-            // data_Force<<endl;
-            // for (int i = 0; i < 12; i++)
-            //     data_Torque<<rbt.dxlMotors.present_torque[i]<<",";
-            //  data_Torque<<endl;
-
-            for (size_t i = 0; i < 12; i++)
+            for (int i = 0; i < 3; i++)
             {
-                data_Force<<fDataForce[i]<<",";
-                //data_Torque<<fDataTorque[i]<<",";
-                // data_Torque<<torque[i]<<",";
+                data_IMU<<rbt.api.fAngle[i]-fAngleZero[i]<<",";  
+                 //cout<<"angle_"<<i<<": "<<rbt.api.fAngle[i]-fAngleZero[i]<<endl;
             }
-            for(auto a:fDataTorque)
-             data_Torque<<a<<",";
+            data_IMU<<endl;
+            for (int i = 0; i < 3; i++)
+                for (int j = 0; j < 4; j++)
+                    data_Force<<rbt.mfForce(i, j)<<",";  
+            data_Force<<endl;
+            for (int i = 0; i < 16; i++)
+                data_Torque<<motors.present_torque[i]<<",";
+             data_Torque<<endl;
+
+            // for (size_t i = 0; i < 12; i++)
+            // {
+            //     data_Force<<fDataForce[i]<<",";
+            //     //data_Torque<<fDataTorque[i]<<",";
+            //     // data_Torque<<torque[i]<<",";
+            // }
+            // for(auto a:fDataTorque)
+            //  data_Torque<<a<<",";
             // for (size_t i = 0; i < 4; i++)
             //      data_Force<<status[i]<<",";
 
-            data_Force<<endl;
-            data_Torque<<endl;
+            // data_Force<<endl;
+            // data_Torque<<endl;
                 // for (size_t i = 0; i < 12; i++)
                 // {
                 //     cout<<torque[i]<<",";
@@ -166,7 +171,7 @@ void *dataSave(void *data)
                 cout<<"dataSave: "<<timeUse<<endl;
         }
 	}
-    // data_IMU.close();data_IMU.clear();
+     data_IMU.close();data_IMU.clear();
     data_Force.close();data_Force.clear();
     data_Torque.close();data_Torque.clear();
 }
@@ -185,8 +190,8 @@ void *robotStateUpdateSend(void *data)
     //motors initial
     motors.setOperatingMode(3);
     motors.torqueEnable();
-    motors.setVelocity(initialMotorVel);
-    motors.setAcceleration(initialMotorAcc);
+    // motors.setVelocity(initialMotorVel);
+    // motors.setAcceleration(initialMotorAcc);
     motors.getPosition();
 #if(INIMODE==1)
     vector<float> init_Motor_angle(12);
@@ -231,13 +236,13 @@ void *robotStateUpdateSend(void *data)
 
 #if(INIMODE==2)
    float  float_initPos[12]={   84.0,65.5,-21.0,
-                                84.0,-65.5,-21.0,
+                                84.0,-65.5,-18.0,
                                -84.0, 65.5,-21.0,
                                -84.0, -65.5,-21.0};
-    // float  float_initPos[12]={    95,  50, -18,
-    //                               85, -55, -18,
-    //                               -65,  55, -22,
-    //                               -70, -55, -12,
+    //  float  float_initPos[12]={    94,60,-16,
+    //                                 94,-60,-14,
+    //                                 -74,60,-6,
+    //                                 -74,-60,-14
     //                                 };
 // 60, 60, -30,
 // 60,-60, -30,
@@ -256,8 +261,9 @@ void *robotStateUpdateSend(void *data)
 //  80, -55, -16,
 // -40,  55, -16,
 // -40, -69, -18,
-  // std::vector<float> float_initPos(12);
-  // string2float2("../include/initPos.csv", float_initPos);//Foot end position
+  //std::vector<float> float_initPos(12);
+//   float float_initPos[12];
+//   string2float2("../include/initPos.csv", float_initPos);//Foot end position
     for(int i=0; i<4; i++)
         for(int j=0;j<3;j++)
         {
@@ -268,6 +274,7 @@ void *robotStateUpdateSend(void *data)
 #endif
   
     rbt.InertiaInit();
+    rbt.Init();
     rbt.SetCoMVel(TCV);
     rbt.InverseKinematics(rbt.mfLegCmdPos);
     rbt.mfTargetPos = rbt.mfLegCmdPos;
@@ -275,17 +282,17 @@ void *robotStateUpdateSend(void *data)
 #if(INIMODE==2)  
     SetPos(rbt.mfJointCmdPos,motors,rbt.vLastSetPos);
     rbt.UpdateJacobians();
-    // float k=find_k(560.0/1000,OMEGA,Y0);
-    // cout<<"k = " <<k<<endl;
+    float k=find_k(800.0/1000,OMEGA,Y0);
+    cout<<"k = " <<k<<endl;
     
 #endif
     usleep(1e5);
     for (size_t i = 0; i < 4; i++)
-        //rbt.PumpNegtive(i);
-        rbt.PumpAllPositve();
+        rbt.PumpNegtive(i);
+       
     usleep(1e6);
     rbt.bInitFlag = 1;
-    static float t=0.0;
+    
    // std::string filename = "../include/recoverinswing.csv";
     // ofstream legcmdpos;
     //   legcmdpos.open(filename);   // cover the old file
@@ -302,7 +309,7 @@ void *robotStateUpdateSend(void *data)
             // if(rbt.runTimes==0){
           
             rbt.NextStep();
-            
+            rbt.CalGravity();
 
             //     for(int i=0;i<4;i++){
             //         for(int j=0;j<3;j++)
@@ -311,7 +318,7 @@ void *robotStateUpdateSend(void *data)
             //         }
             //         legcmdpos<<endl;
             //     }
-            //     cout<<"rbt.legcmdpos:"<<rbt.mfLegCmdPos<<endl;
+            //   cout<<"rbt.legcmdpos:"<<rbt.mfLegCmdPos<<endl;
             // }
             // else{
             //            cout<<"write finished"<<endl;
@@ -321,29 +328,19 @@ void *robotStateUpdateSend(void *data)
              
            rbt.AirControl();
 
-           // rbt.AttitudeCorrection180();
+           rbt.AttitudeCorrection180();
             /*******************vibration*************/
             
 
-            // // 使用t
-            // t=vibration_time;    
-            // // 重置标志
-            // data_ready = false;
-            t=program_run_time.load()-0.5; //0.5 to equal the sin curve
-           // cout<<"t"<<t<<endl;
-           float z=quadSprings(t,OMEGA,Y0);
-            cout<<"z:"<<z<<endl;
+          
+        //     cout<<"z:"<<z<<endl;
             /************************************/
-            rbt.mfCompensation<<0,0,z,
-                                0,0,z,
-                                0,0,z,
-                                0,0,z;
-
-             rbt.ParaDeliver();
+        
+            rbt.ParaDeliver();
             
             // //cout<<"LegCmdPos:\n"<<rbt.mfLegCmdPos<<endl;    
             // cout<<"t: "<<t<<endl;
-             cout<<"TargetPos:\n"<<rbt.mfTargetPos<<endl<<endl; 
+             //cout<<"TargetPos:\n"<<rbt.mfTargetPos<<endl<<endl; 
             // cout<<"Compensation:\n"<<rbt.mfCompensation<<endl<<endl; 
 
             gettimeofday(&endTime,NULL);
@@ -369,6 +366,7 @@ void *runImpCtller(void *data)
     //rbt.dxlMotors.torqueEnable();
     // float k=find_k(560.0/1000,OMEGA,Y0);
     // cout<<"k = " <<k<<endl;
+    static float t=0.0;
     while (1)
     {
         if(runFlag)
@@ -376,7 +374,7 @@ void *runImpCtller(void *data)
             gettimeofday(&startTime,NULL);
             /* get motors data  */
             motors.getTorque();
-            ringBuffer_torque.push(motors.present_torque);
+            //ringBuffer_torque.push(motors.present_torque);
             
             motors.getPosition();
             motors.getVelocity();
@@ -389,7 +387,9 @@ void *runImpCtller(void *data)
 
             rbt.UpdateFtsPresVel();
             rbt.UpdateFtsPresForce(motors.present_torque);  
-            ringBuffer_force.push(rbt.mfForce);
+           // ringBuffer_force.push(rbt.mfForce);
+            //cout<<"preVel"<<rbt.mfLegPresVel<<endl;
+            //cout<<"mfForce"<<rbt.mfForce<<endl;
             // cout<<"torque: ";
             // for(auto a:motors.present_torque)
             //     cout<<a<<" ";
@@ -401,16 +401,54 @@ void *runImpCtller(void *data)
 
 
             /*      Admittance control     */ 
-            // rbt.Control();   
+             rbt.CalSpringForce();
+             rbt.CaloutForce();
+             rbt.CalTargetForce();
+             rbt.Control();   
            // rbt.VibrationControl_quad(k,1,800.0/1000);
-           // rbt.InverseKinematics(rbt.mfXc);    // Admittance control
-           //  cout<<"mf Force:"<<rbt.mfForce<<endl;
-           // cout<<"xc_dotdot: \n"<<rbt.mfXcDotDot<<"; \nxc_dot: \n"<<rbt.mfXcDot<<"; \nxc: \n"<<rbt.mfXc<<endl;
-            // /*      Postion control with Comp      */
+            //rbt.InverseKinematics(rbt.mfXc);    // Admittance control
+            cout<<"mfForce:"<<rbt.mfForce<<endl;
+            cout<<"xc_dotdot: \n"<<rbt.mfXcDotDot<<"; \nxc_dot: \n"<<rbt.mfXcDot<<"; \nxc: \n"<<rbt.mfXc<<endl;
+             /*      Postion control with Comp      */   
+            // 重置标志
+           bool isAllStance=true;
+           t=program_run_time.load(); //0.5 to equal the sin curve
+           //cout<<"t"<<t<<endl;
+           float z=quadSprings(t,OMEGA,Y0);
+           float cmp;
+           float cmp2;
+           cmp2=-0/1000;
+           if(z>0)
+            cmp=0/1000;
+           if(z<=0)
+            cmp=0/1000;
+
+           Matrix<float,4,3> tempM;
+           tempM<<0,0,z+cmp,
+                0,0,z+cmp,
+                0,0,z+cmp,
+                0,0,z+cmp;
+            for(int legnum=0;legnum<4;legnum++){
+                if(rbt.m_glLeg[legnum]->GetLegStatus()!=stance&&rbt.m_glLeg[legnum]->GetLegStatus()!=recover){
+                // tempM.row(legnum)<<0,0,0;
+                // tempM.row(3-legnum)<<0,0,cmp2;
+                isAllStance=false;
+                
+                } 
+            }
+            if(isAllStance){
+                tempM<<0,0,z+0/1000,
+                       0,0,z+0/1000,
+                       0,0,z+0/1000,
+                       0,0,z+0/1000;
+            }
+            //cout<<"tempM"<<tempM<<endl;
+            // Matrix<float,4,3> vibraPos=rbt.mfTargetPos+tempM;
+            Matrix<float,4,3> vibraPos=rbt.mfLegCmdPos+tempM;
             rbt.InverseKinematics(rbt.mfTargetPos); //    Postion control
 
             /*      Postion control      */
-           // rbt.InverseKinematics(rbt.mfLegCmdPos); 
+            //rbt.InverseKinematics(rbt.mfLegCmdPos); 
            // cout<<"mfLegCmdPos:\n"<<rbt.mfLegCmdPos<<endl;
             //cout<<"mfJointCmdPos:\n"<<rbt.mfJointCmdPos<<endl;
             // cout<<"mfLegCmdPos: \n"<<rbt.mfLegCmdPos<<endl;
@@ -514,12 +552,12 @@ void *timeUpdate(void *date)
         return NULL;
     }
 
-    // 配置从机地址和端口
+    // 配置从机地址和端叄1�71ￄ1�771ￄ1�71ￄ1�777
     struct sockaddr_in client_addr;
     memset(&client_addr, 0, sizeof(client_addr));
     client_addr.sin_family = AF_INET;
-    client_addr.sin_addr.s_addr = inet_addr("192.168.137.27"); // 从机的IP地址
-    client_addr.sin_port = htons(65432); // 和主机程序发送数据的端口一致
+    client_addr.sin_addr.s_addr = inet_addr("192.168.137.48"); // 从机的IP地址
+    client_addr.sin_port = htons(65432); // 和主机程序发送数据的端口丢�臄1�71ￄ1�771ￄ1�71ￄ1�777
 
     // 绑定socket
     if (bind(sockfd, (struct sockaddr*)&client_addr, sizeof(client_addr)) < 0) {
@@ -549,76 +587,40 @@ void *timeUpdate(void *date)
 
         char STtime2[50];
         snprintf(STtime2,sizeof(STtime2),"%1d,%1d",startTime2.tv_sec,startTime2.tv_usec);
-        std::cout << "startTime2: " << STtime2 << std::endl;
+        // std::cout << "startTime2: " << STtime2 << std::endl;
 
         //解析接受到的数据
         double program_run_time_vibration;
         char STtime[50];
         sscanf(buffer, "%lf,%s", &program_run_time_vibration,STtime);
-        std::cout << "timeuse1: " << program_run_time_vibration << std::endl;
-        std::cout << "STtime: " << STtime << std::endl;
+        // std::cout << "timeuse1: " << program_run_time_vibration << std::endl;
+        // std::cout << "STtime: " << STtime << std::endl;
         
         //将转换成字符串格式的时间重新解析
         // 解析秒数和微秒数
         char delimiter = ',';
 
-    // 拆分字符串
+    // 拆分字符丄1�71ￄ1�771ￄ1�71ￄ1�777
      std::vector<std::string> tokens = split(STtime, delimiter);
 
     // 输出结果
-        for (const auto &token : tokens) {
-            std::cout << token << std::endl;
-        }
+        //  for (const auto &token : tokens) {
+        //      std::cout << token << std::endl;
+        //  }
 
-        std::cout << "startTime2.tv_sec: " << startTime2.tv_sec << std::endl;
-        std::cout << "startTime2.tv_usec: " << startTime2.tv_usec << std::endl;
-        std::cout << "program_run_time_vibration: " << program_run_time_vibration << std::endl;
+        //  std::cout << "startTime2.tv_sec: " << startTime2.tv_sec << std::endl;
+        //  std::cout << "startTime2.tv_usec: " << startTime2.tv_usec << std::endl;
+        // std::cout << "program_run_time_vibration: " << program_run_time_vibration << std::endl;
 
         //计算传输延迟
         timeUse2 = 1e6*(startTime2.tv_sec - stod(tokens[0])) + startTime2.tv_usec - stod(tokens[1]); 
 
         //计算接受程序运行时间
-        double adjusted_run_time = program_run_time_vibration + timeUse2*1e-06;
+        double adjusted_run_time = program_run_time_vibration; //+ timeUse2*1e-06;
 
-        // // 获取接收时间
-        // auto received_time_point = std::chrono::high_resolution_clock::now();
-        // auto received_time_t = std::chrono::high_resolution_clock::to_time_t(received_time_point);
-        // char received_time_str[100];
-        // strftime(received_time_str, sizeof(received_time_str), "%Y-%m-%d %H:%M:%S", std::gmtime(&received_time_t));
-
-        // // 解析接收到的数据
-        // double program_run_time;
-        // char sent_time_str[100];
-        // sscanf(buffer, "%lf,%31[^\n]", &program_run_time, sent_time_str);
-        // std::cout << "buffer: " << buffer << std::endl;
-        // std::cout << "senttime: " << sent_time_str << std::endl;
-
-        // // 计算传输延迟
-        // std::tm tm2 = {};
-        // strptime(sent_time_str, "%Y-%m-%d %H:%M:%S", &tm2);
-      
-        // auto sent_time_t = std::mktime(&tm2);
-        // std::chrono::duration<double> transmission_delay = std::chrono::high_resolution_clock::from_time_t(received_time_t) - std::chrono::high_resolution_clock::from_time_t(sent_time_t);
-        
-
-        // std::cout << "received_time_t: " << received_time_t << std::endl;
-        // std::cout << "Sent time_t: " << sent_time_t << std::endl;
-
-
-        
-
-        // // 计算接收时的程序运行时间
-        // double adjusted_run_time = program_run_time + transmission_delay.count();
-
-        // std::cout << "program_run_time: " << program_run_time << std::endl;
-        // std::cout << "transmission_delay.count(): " << transmission_delay.count() << std::endl;
-
-        // std::cout << "接收到的程序运行时间: " << program_run_time << " 秒" << std::endl;
-        // std::cout << "发送时的世界时间: " << sent_time_str << std::endl;
-        // std::cout << "接收时的世界时间: " << received_time_str << std::endl;
-        std::cout << "传输延迟: " << timeUse2 << " 微秒" << std::endl;
-        std::cout << "接收时的程序运行时间: " << adjusted_run_time << " 微秒" << std::endl;
-        std::cout << "------------------------------------------------" << std::endl;
+       // std::cout << "传输延迟: " << timeUse2 << " 微秒" << std::endl;
+        // std::cout << "接收时的程序运行时间: " << adjusted_run_time << " 微秒" << std::endl;
+        // std::cout << "------------------------------------------------" << std::endl;
         program_run_time.store(adjusted_run_time); 
       
 
@@ -667,12 +669,12 @@ int main(int argc, char ** argv)
     
     pthread_t th1, th2, th3, th4,th5,th6;
 	int ret;
-    // ret = pthread_create(&th1,NULL,udpConnect,NULL);
-    // if(ret != 0)
-	// {
-	// 	printf("create pthread1 error!\n");
-	// 	exit(1);
-	// }
+    ret = pthread_create(&th1,NULL,udpConnect,NULL);
+    if(ret != 0)
+	{
+		printf("create pthread1 error!\n");
+		exit(1);
+	}
     ret = pthread_create(&th2,NULL,robotStateUpdateSend,NULL);
     if(ret != 0)
 	{

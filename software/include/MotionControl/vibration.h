@@ -15,7 +15,7 @@ inline float find_k(float m, float omega, float Y_0,float xi = 1.0) {  // Assume
         float omega_bar = omega / omega_0;
         float A = Y_0 * (omega_bar * omega_bar) / std::sqrt(std::pow(1 - omega_bar * omega_bar, 2) + std::pow(2 * xi * omega_bar, 2));
         
-        if (A < 10.0 / 1000.0) {
+        if (A < 12 / 1000.0) {
             k_upper_bound = k;
         } else {
             k_lower_bound = k;
@@ -33,9 +33,10 @@ inline float find_k(float m, float omega, float Y_0,float xi = 1.0) {  // Assume
  */
 inline float quadSprings(float t,float omega,float Y_0){
     float k,c,m;//k is stiffness, c is damping, and 𝑚 is the mass of the robot body."
-    m=560.0/1000;
+    m=800.0/1000;
     // k=find_k(m,omega,Y_0);
-    k=11;
+    //k=11.843;
+    k=6.5;
    // cout<<"k:"<<k<<endl;
     float xi,omega_0,omega_bar,alpha;
     omega_0=sqrt(k/m);

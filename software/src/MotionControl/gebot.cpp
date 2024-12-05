@@ -239,7 +239,7 @@ void CGebot::UpdateLegStatus(int legNum)
             m_glLeg[legNum]->ChangeStatus(detach);
             iStatusCounter[legNum] = iStatusCounterBuffer[legNum][int(detach)];
             mfStancePhaseEndPos(legNum) = mfLegCmdPos(legNum);
-            mfSwingVelocity = -(mfStancePhaseEndPos.row(legNum) - mfStancePhaseStartPos.row(legNum)) / (iStatusCounterBuffer[legNum][(int)detach] + iStatusCounterBuffer[legNum][(int)swingUp] + iStatusCounterBuffer[legNum][(int)swingDown]+  iStatusCounterBuffer[legNum][(int)recover]);
+            mfSwingVelocity = -(mfStancePhaseEndPos.row(legNum) - mfStancePhaseStartPos.row(legNum)) / (iStatusCounterBuffer[legNum][(int)detach] + iStatusCounterBuffer[legNum][(int)swingUp] + iStatusCounterBuffer[legNum][(int)swingDown]);
             BSwingPhaseStartFlag = true;
             break;
         }
@@ -320,8 +320,10 @@ void CGebot::SetCoMVel(Matrix<float, 6,1> tCV)
 void CGebot::UpdatejointPresPosAndVel(vector<float> present_position)
 {
      mfJointPresPos=inverseMotorMapping(present_position);
-
-    // cout<<"mfJointPresPos: " <<mfJointPresPos<<endl;
+    float offSet[]= OFFSET;
+    for (int i =0;i<4;i++)
+        mfJointPresPos(i,3)=mfJointPresPos(i,3)-offSet[i];
+    //cout<<"mfJointPresPos: " <<mfJointPresPos<<endl;
     // cout<<"mfJointLastPos: " <<mfJointLastPos<<endl;
     for(int legNum=0;legNum<4;legNum++)
     {   
@@ -331,7 +333,14 @@ void CGebot::UpdatejointPresPosAndVel(vector<float> present_position)
 
     mfJointPresVel=(mfJointPresPos-mfJointLastPos)*loopRateCommandUpdate;
     mfJointLastPos=mfJointPresPos;
-  
+    //cout<<"mfJointPresVel: " <<mfJointPresVel<<endl;
+    // static int t=0;
+    // t++;
+    // if(t%16==0){
+    //     cout<<"vel= "<<mfJointPresVel<<endl;
+    //     // cout<<"\t torque= " <<temp.row(1)<<endl;
+    //     t=1;
+    // }
 }
 
 /**
@@ -371,7 +380,13 @@ void CGebot::UpdateFtsPresVel()
         temp_vel = m_glLeg[i]->GetJacobian() * mfJointPresVel.row(i).transpose();
         mfLegPresVel.row(i) = temp_vel.transpose();
     }
-    
+    // static int t=0;
+    // t++;
+    // if(t%16==0){
+    //     cout<<"vel= "<<mfLegPresVel<<endl;
+    //     // cout<<"\t torque= " <<temp.row(1)<<endl;
+    //     t=1;
+    // }
 }
 void CGebot::NextStep()
 {
@@ -383,7 +398,7 @@ void CGebot::NextStep()
 
     for(uint8_t legNum=0; legNum<4; legNum++)  // run all 4 legs
     {   
-        UpdateLegStatus(legNum);
+       
         enum_LEGSTATUS ls=m_glLeg[legNum]->GetLegStatus(); //get present status
         if(legNum<2)
             fStepHeight = StepHeight_F;
@@ -463,8 +478,9 @@ void CGebot::NextStep()
         //     mfLegCmdPos(legNum, 2) +=  attchDis[legNum] / iStatusCounterBuffer[legNum][(int)ls];
         // }
         //cout<<"legNum_"<<(int)legNum<<":"<<stepFlag[legNum]<<"  ";
+         UpdateLegStatus(legNum);
     }
-   
+    
     for(uint8_t legNum=0; legNum<4; legNum++)
     {
         if(m_glLeg[legNum]->GetLegStatus()!= stance) mfTimePresentForSwing(legNum) += fTimePeriod;

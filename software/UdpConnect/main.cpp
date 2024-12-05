@@ -16,12 +16,12 @@ int main(int argc, char *argv[])
 	uint16_t srv_port = stoi(argv[2]);
 
 	CUdpSocket cli_sock;
-	//创建套接字
+	//创建套接孄1�7
 	CHECK_RET(cli_sock.Socket());
-	//绑定数据(不推荐)
+	//绑定数据(不推荄1�7)
 	while(1)
 	{
-		//发送数据
+		//发��数捄1�7
 		cout << "client say:";
 		string buf;
 		int command=scanKeyboard();
@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
 		// CHECK_RET(cli_sock.Recv(&buf));
 		// cout << "server say: " << buf << endl;
 	}
-	//关闭套接字
+	//关闭套接孄1�7
 	cli_sock.Close();
 	return 0;
 }

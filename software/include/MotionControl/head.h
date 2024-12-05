@@ -13,14 +13,14 @@
 // #define CompDisA3 30*0.001  
 // #define CompDisALL 16*0.001     // Compensation of Distance  AttitudeCorrection() All stace phase
 /* Position control */
-#define StepHeight_F  20.0/1000   //swingUp
-#define StepHeight_H  20.0/1000   //swingUp
-#define Press  0.0/1000.0  //19.0/1000        //attach press 7
-#define CompDisA1 -4.0/1000.0   // Compensation of Distance in AttitudeCorrection() with Amble gait
-#define CompDisA2 20.0/1000.0 
-#define CompDisA3 20.0/1000.0   
+#define StepHeight_F  25.0/1000   //swingUp
+#define StepHeight_H  25.0/1000   //swingUp
+#define Press  26.0/1000.0  //19.0/1000        //attach press 7
+#define CompDisA1 -8.0/1000.0   // Compensation of Distance in AttitudeCorrection() with Amble gait
+#define CompDisA2 18.0/1000.0 
+#define CompDisA3 18.0/1000.0   
 #define CompDisALL 8.0 /1000.0     // Compensation of Distance  AttitudeCorrection() All stace phase
-
+#define OFFSET {-0.1,0.0,-0,-0.1}
 #define THREAD1_ENABLE 1
 #define THREAD2_ENABLE 1
 //  1:  Motor angle
@@ -33,7 +33,7 @@
 #define loopRateDataSave 100.0 //hz
 #define loopRateSVRead   100.0//hz
 #define VELX 3.0/1000    // mm  step length = VELX * timeForStancePhase        
-#define TimePeriod 0.01
+#define TimePeriod 0.05
 #define TimeForGaitPeriod 8.0
 #define PI 3.1415926
 #define THREHOLDLF 1000//800
@@ -44,7 +44,7 @@
 #define ATTACH_TIMES  4
 #define PrePsotiveFactor 0.04
 #define OMEGA PI
-#define Y0 30.0/1000
+#define Y0 15.0/1000
 
 
 
@@ -73,8 +73,9 @@
 #include <mutex>
 #include <condition_variable>
 #include"vibration.h"
+#include <qpOASES.hpp>
 #ifdef  VMCCONTROL
-  #include <qpOASES.hpp>
+  
 #endif
 using namespace Eigen;
 using namespace std;
