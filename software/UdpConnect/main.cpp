@@ -16,12 +16,11 @@ int main(int argc, char *argv[])
 	uint16_t srv_port = stoi(argv[2]);
 
 	CUdpSocket cli_sock;
-	//创建套接孄1�7
+	//创建套接孄1�7
 	CHECK_RET(cli_sock.Socket());
-	//绑定数据(不推荄1�7)
+	//绑定数据(不推荄1�7)
 	while(1)
 	{
-		//发��数捄1�7
 		cout << "client say:";
 		string buf;
 		int command=scanKeyboard();
@@ -45,7 +44,92 @@ int main(int argc, char *argv[])
             buf = "pumpNegative";
             goto SEND;
         }
-      
+		 if(command=='u')
+        {
+            buf = "forward";
+            goto SEND;
+        }
+		 if(command=='j')
+        {
+            buf = "back";
+            goto SEND;
+        }
+		 if(command=='h')
+        {
+            buf = "left";
+            goto SEND;
+        }
+		 if(command=='k')
+        {
+            buf = "right";
+            goto SEND;
+        }
+		 if(command=='o')
+        {
+            buf = "goupup";
+            goto SEND;
+        }
+         if(command=='i')
+        {
+            buf = "op";
+            goto SEND;
+        }
+		 if(command=='l')
+        {
+            buf = "down";
+            goto SEND;
+        }
+		 if(command=='0')
+        {
+            buf = "0";
+            goto SEND;
+        }
+		 if(command=='1')
+        {
+            buf = "1";
+            goto SEND;
+        }
+		 if(command=='2')
+        {
+            buf = "2";
+            goto SEND;
+        }
+		 if(command=='3')
+        {
+            buf = "3";
+            goto SEND;
+        }
+        if(command=='a')
+        {
+            buf = "left";
+            goto SEND;
+        }
+        if(command=='d')
+        {
+            buf = "right";
+            goto SEND;
+        }
+        if(command=='q')
+        {
+            buf = "rotateleft";
+            goto SEND;
+        }
+        if(command=='e')
+        {
+            buf = "rotateright";
+            goto SEND;
+        }
+        if(command=='c')
+        {
+            buf = "ChangeStancePos";
+            goto SEND;
+        }
+        if(command=='x')
+        {
+            buf = "xed";
+            goto SEND;
+        }        
+
         SEND:
 		CHECK_RET(cli_sock.Send(buf, srv_ip, srv_port));
 		//接收数据
@@ -53,7 +137,7 @@ int main(int argc, char *argv[])
 		// CHECK_RET(cli_sock.Recv(&buf));
 		// cout << "server say: " << buf << endl;
 	}
-	//关闭套接孄1�7
+	//关闭套接孄1�7
 	cli_sock.Close();
 	return 0;
 }

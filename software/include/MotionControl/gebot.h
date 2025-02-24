@@ -64,7 +64,9 @@ public:
     Matrix<float, 1, 3> mfSwingVelocity;
     Matrix<float, 4, 3> mfJointCompDis;  // compensation joint angle
     Matrix<float, 4, 3> mfCompensation;
-   
+    Matrix<float, 4, 3> mfLegCmdCompPos;// 
+    Matrix<float, 4, 3> mfShoulderPosCompensation;//  
+    float comForce;
     bool BSwingPhaseStartFlag, BSwingPhaseEndFlag;
     vector<float> vLastSetPos;
     CGebot(float length,float width,float height,float mass);
@@ -82,6 +84,8 @@ public:
     void UpdateFtsPresVel(); 
     void UpdateTouchStatus(vector<int> values,vector<int> prevalues,vector<int> preprevalues);
     void UpdateLegStatus(int legNum);
+    Matrix<float, 3, 1> FnnOutputcpt(VectorXd vec);
+    Matrix<float, 4, 3> FnnStepModify();
     void AttitudeCorrection180();
     void AttitudeCorrection90();
     

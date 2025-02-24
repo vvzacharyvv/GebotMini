@@ -12,25 +12,33 @@ CRobotControl rbt(110.0,60.0,20.0,800.0,ADMITTANCE);
 DxlAPI motors("/dev/ttyAMA0", 3000000, rbt.ID, 2);
 // std::atomic<bool> runFlag(true); 
 bool runFlag = 0;
+bool restartFlag = 1;
+int choosePosNum = 0;
+int LastJointPos = 0;
+std::mutex mtx_choosePosNum;
+std::mutex mtx_LastJointPos;
+std::mutex mtx_restartFlag;
 std::atomic<float> program_run_time(0.0);
 boost::lockfree::spsc_queue<vector<float>, boost::lockfree::capacity<1024>> ringBuffer_torque;
 boost::lockfree::spsc_queue<Matrix<float,3,4>, boost::lockfree::capacity<1024>> ringBuffer_force;
 
-
+bool opFlag=0;
 void *udpConnect(void *data)
 {
+    Matrix<float, 4, 3> InitPos;
 
 	string ip = "127.0.0.1";
 	uint16_t port = 8888;
 
 	CUdpSocket srv_sock;
-	//创建套接孄1�71ￄ1�771ￄ1�71ￄ1�777
+	//创建套接孄1�71ￄ1�771ￄ1�71ￄ1�7771ￄ1�71ￄ1�771ￄ1�71ￄ1�7777
 	CHECK_RET(srv_sock.Socket());
 	//绑定地址信息
 	CHECK_RET(srv_sock.Bind(ip, port));
 	while(1)
 	{
 		//接收数据
+        static int legChosen=0;
 		string buf;
 		string peer_ip;
 		uint16_t peer_port;
@@ -38,24 +46,81 @@ void *udpConnect(void *data)
 		cout << "UpperComputer["<<peer_ip<<":"<<peer_port<<"] Command: " << buf << endl;
         //buf match command 
         int ret=commandJudge((char*)string("start").c_str(),(char *)buf.c_str());
-        if(ret) {runFlag=1; goto END;}
+           if(ret) {Matrix<float, 6,1> TCV;
+                TCV<<3.0/1000,0,0,0,0,0;
+                rbt.SetCoMVel(TCV); 
+                runFlag=1;
+                goto END;}
         ret=commandJudge((char*)string("stop").c_str(),(char *)buf.c_str());
         if(ret) {runFlag=0; goto END;}
+        ret=commandJudge((char*)string("ChangeStancePos").c_str(),(char *)buf.c_str());
+        if(ret) {   
+                    // std::lock_guard<std::mutex> lock(mtx_choosePosNum);  
+                    // std::lock_guard<std::mutex> lock2(mtx_LastJointPos);  
+                    // ++choosePosNum;
+                    // ++LastJointPos;
+                    goto END;
+                }
+        ret=commandJudge((char*)string("xed").c_str(),(char *)buf.c_str());
+        if(ret){
+                    std::lock_guard<std::mutex> lock(mtx_choosePosNum);  
+                    std::lock_guard<std::mutex> lock2(mtx_LastJointPos);  
+                    ++choosePosNum;
+                    ++LastJointPos;                
+                    restartFlag=1;
+                    goto END;
+               }
         ret=commandJudge((char*)string("pumpPositive").c_str(),(char *)buf.c_str());
         if(ret) {rbt.PumpAllPositve(); goto END;}
         ret=commandJudge((char*)string("pumpNegative").c_str(),(char *)buf.c_str());
         if(ret) {rbt.PumpAllNegtive(); goto END;}
+        ret=commandJudge((char*)string("0").c_str(),(char *)buf.c_str());
+        if(ret) {legChosen=0; goto END;}
+        ret=commandJudge((char*)string("1").c_str(),(char *)buf.c_str());
+        if(ret) {legChosen=1; goto END; goto END;}
+        ret=commandJudge((char*)string("2").c_str(),(char *)buf.c_str());
+        if(ret) {legChosen=2; goto END;opFlag=1; goto END;}
+        ret=commandJudge((char*)string("3").c_str(),(char *)buf.c_str());
+        if(ret) {legChosen=3; goto END;opFlag=1; goto END;}
+        ret=commandJudge((char*)string("forward").c_str(),(char *)buf.c_str());
+        if(ret) {rbt.mfLegCmdPos(legChosen,2)+=0.001; opFlag=1;goto END;}
+        ret=commandJudge((char*)string("back").c_str(),(char *)buf.c_str());
+        if(ret) {rbt.mfLegCmdPos(legChosen,2)-=0.001; opFlag=1;goto END;}
+        ret=commandJudge((char*)string("left").c_str(),(char *)buf.c_str());
+        if(ret) {Matrix<float, 6,1> TCV;
+                TCV<<0,3.0/1000,0,0,0,0;
+                rbt.SetCoMVel(TCV); 
+                runFlag=1;
+                goto END;}
+        ret=commandJudge((char*)string("right").c_str(),(char *)buf.c_str());
+        if(ret) {Matrix<float, 6,1> TCV;
+                TCV<<0,-3.0/1000,0,0,0,0;
+                rbt.SetCoMVel(TCV); 
+                runFlag=1;
+                goto END;}
+        ret=commandJudge((char*)string("rotateleft").c_str(),(char *)buf.c_str());
+        if(ret) {Matrix<float, 6,1> TCV;
+                TCV<<0,0,0,0,0,0.01;
+                rbt.SetCoMVel(TCV); 
+                runFlag=1;
+                goto END;}
+        ret=commandJudge((char*)string("rotateright").c_str(),(char *)buf.c_str());
+        if(ret) {Matrix<float, 6,1> TCV;
+                TCV<<0,0,0,0,0,-0.01;
+                rbt.SetCoMVel(TCV); 
+                runFlag=1;
+                goto END;}
         // int ret=match((char*)string("start").c_str(),(char*)string("startsada").c_str());
         // cout<<(char*)string("start").c_str()<<endl;
         // cout<<ret<<endl;
-		//发��数捄1�71ￄ1�771ￄ1�71ￄ1�777
+		//发��数捄1�71ￄ1�771ￄ1�71ￄ1�7771ￄ1�71ￄ1�771ￄ1�71ￄ1�7777
         END:
 		buf.clear();
 		// cout << "server say: ";
 		// cin >> buf;
 		// CHECK_RET(srv_sock.Send(buf, peer_ip, peer_port));
 	}
-	//关闭套接孄1�71ￄ1�771ￄ1�71ￄ1�777
+	//关闭套接孄1�71ￄ1�771ￄ1�71ￄ1�7771ￄ1�71ￄ1�771ￄ1�71ￄ1�7777
 	srv_sock.Close();
 	return 0;
 }
@@ -176,7 +241,6 @@ void *dataSave(void *data)
     data_Torque.close();data_Torque.clear();
 }
 
-
 void *robotStateUpdateSend(void *data)
 {
     Matrix<float,4,2> TimeForSwingPhase;
@@ -185,122 +249,158 @@ void *robotStateUpdateSend(void *data)
     vector<float>initialMotorVel(16,80);
     vector<int>initialMotorAcc(16,80);
     TCV << VELX, 0, 0,0,0,0 ;// X, Y , alpha 
-    
-    
-    //motors initial
-    motors.setOperatingMode(3);
-    motors.torqueEnable();
-    // motors.setVelocity(initialMotorVel);
-    // motors.setAcceleration(initialMotorAcc);
-    motors.getPosition();
-#if(INIMODE==1)
-    vector<float> init_Motor_angle(12);
-    float float_init_Motor_angle[12];
-    string2float("../include/init_Motor_angle.csv", float_init_Motor_angle);//Motor angle     d
-    //cout<<"____________"<<endl;
-    for(int i=0; i<4; i++)
-        for(int j=0;j<3;j++)
-        {
-            float_init_Motor_angle[i*3+j] = float_init_Motor_angle[i*3+j] * 3.1416/180; //to rad
-            init_Motor_angle[i*3+j] = float_init_Motor_angle[i*3+j];      //vector
-            rbt.mfJointCmdPos(i,j) = float_init_Motor_angle[i*3+j];            //rbt.forwardKinematics
-            //cout<<init_Motor_angle[i*3+j]<<endl;
-        }
-    rbt.forwardKinematics(0);
-    rbt.setInitPos(rbt.mfLegCmdPos);        //legCmdPos
-    cout<<"legCmdPos:\n"<<rbt.legCmdPos<<endl ;
-
-    motors.setPosition(init_Motor_angle);
-#endif    
- 
-    //      rbt initial
-    // TimeForStancePhase<< 0,                       TimeForGaitPeriod/2.0,     // diagonal
-    //                      TimeForGaitPeriod/2.0,   TimeForGaitPeriod, 
-    //                      TimeForGaitPeriod/2.0,   TimeForGaitPeriod, 
-    //                      0,                       TimeForGaitPeriod/2.0;
-    // TimeForSwingPhase<< TimeForGaitPeriod/4.0 *2,          TimeForGaitPeriod/4.0 *3,   // tripod
-    //                      0,             TimeForGaitPeriod/4.0,
-    //                      TimeForGaitPeriod/4.0 *3,    TimeForGaitPeriod,
-    //                      TimeForGaitPeriod/4.0  ,          TimeForGaitPeriod/4.0 *2;
-//if(VELX != 0)
-    TimeForSwingPhase<< 8*TimeForGaitPeriod/16, 	11*TimeForGaitPeriod/16,		
-                        0,		 		 					3*TimeForGaitPeriod/16,		
-                        12*TimeForGaitPeriod/16, 	15*TimeForGaitPeriod/16,		
-                        4*TimeForGaitPeriod/16, 	7*TimeForGaitPeriod/16;
-// else 
-//     TimeForSwingPhase<< 0, 	0,		
-//                         0,	0,		
-//                         0,  0,		
-//                         0, 	0;
-    rbt.SetPhase(TimePeriod, TimeForGaitPeriod, TimeForSwingPhase);
-
-#if(INIMODE==2)
-   float  float_initPos[12]={   84.0,65.5,-21.0,
-                                84.0,-65.5,-18.0,
-                               -84.0, 65.5,-21.0,
-                               -84.0, -65.5,-21.0};
-    //  float  float_initPos[12]={    94,60,-16,
-    //                                 94,-60,-14,
-    //                                 -74,60,-6,
-    //                                 -74,-60,-14
-    //                                 };
-// 60, 60, -30,
-// 60,-60, -30,
-// -60, 60, -30,
-// -60,-60, -30,
-// 65.5,70.0,21.0,
-// 65.5,70.0,21.0,
-// 65.5,84.0,21.0,
-// 65.5,84.0,21.0
-//  80,  50, -22,
-//  80, -50, -22,
-// -40,  50, -22,
-// -40, -50, -23,
-
-//  80,  55, -16,
-//  80, -55, -16,
-// -40,  55, -16,
-// -40, -69, -18,
-  //std::vector<float> float_initPos(12);
-//   float float_initPos[12];
-//   string2float2("../include/initPos.csv", float_initPos);//Foot end position
-    for(int i=0; i<4; i++)
-        for(int j=0;j<3;j++)
-        {
-            InitPos(i, j) = float_initPos[i*3+j]/1000;
-            //cout<<InitPos(i, j)<<endl;
-        }
-    rbt.SetInitPos(InitPos);
-#endif
-  
-    rbt.InertiaInit();
-    rbt.Init();
-    rbt.SetCoMVel(TCV);
-    rbt.InverseKinematics(rbt.mfLegCmdPos);
-    rbt.mfTargetPos = rbt.mfLegCmdPos;
-  
-#if(INIMODE==2)  
-    SetPos(rbt.mfJointCmdPos,motors,rbt.vLastSetPos);
-    rbt.UpdateJacobians();
-    float k=find_k(800.0/1000,OMEGA,Y0);
-    cout<<"k = " <<k<<endl;
-    
-#endif
-    usleep(1e5);
-    for (size_t i = 0; i < 4; i++)
-        rbt.PumpNegtive(i);
-       
-    usleep(1e6);
-    rbt.bInitFlag = 1;
-    
-   // std::string filename = "../include/recoverinswing.csv";
-    // ofstream legcmdpos;
-    //   legcmdpos.open(filename);   // cover the old file
-    // if (legcmdpos)    cout<<filename<<" file open Successful"<<endl;
-    // else    cout<<filename<<" file open FAIL"<<endl;
-    usleep(1e3);
+        
     while(1)
     {
+        if(restartFlag){
+            std::lock_guard<std::mutex> lock3(mtx_restartFlag);
+            restartFlag = 0;
+            //motors initial
+            motors.setOperatingMode(3);
+            motors.torqueEnable();
+            // motors.setVelocity(initialMotorVel);
+            // motors.setAcceleration(initialMotorAcc);
+            motors.getPosition();
+        #if(INIMODE==1)
+            vector<float> init_Motor_angle(12);
+            float float_init_Motor_angle[12];
+            string2float("../include/init_Motor_angle.csv", float_init_Motor_angle);//Motor angle     d
+            //cout<<"____________"<<endl;
+            for(int i=0; i<4; i++)
+                for(int j=0;j<3;j++)
+                {
+                    float_init_Motor_angle[i*3+j] = float_init_Motor_angle[i*3+j] * 3.1416/180; //to rad
+                    init_Motor_angle[i*3+j] = float_init_Motor_angle[i*3+j];      //vector
+                    rbt.mfJointCmdPos(i,j) = float_init_Motor_angle[i*3+j];            //rbt.forwardKinematics
+                    //cout<<init_Motor_angle[i*3+j]<<endl;
+                }
+            rbt.forwardKinematics(0);
+            rbt.setInitPos(rbt.mfLegCmdPos);        //legCmdPos
+            cout<<"legCmdPos:\n"<<rbt.legCmdPos<<endl ;
+
+            motors.setPosition(init_Motor_angle);
+        #endif    
+        
+            //      rbt initial
+            // TimeForStancePhase<< 0,                       TimeForGaitPeriod/2.0,     // diagonal
+            //                      TimeForGaitPeriod/2.0,   TimeForGaitPeriod, 
+            //                      TimeForGaitPeriod/2.0,   TimeForGaitPeriod, 
+            //                      0,                       TimeForGaitPeriod/2.0;
+            // TimeForSwingPhase<< TimeForGaitPeriod/4.0 *2,          TimeForGaitPeriod/4.0 *3,   // tripod
+            //                      0,             TimeForGaitPeriod/4.0,
+            //                      TimeForGaitPeriod/4.0 *3,    TimeForGaitPeriod,
+            //                      TimeForGaitPeriod/4.0  ,          TimeForGaitPeriod/4.0 *2;
+        //if(VELX != 0)
+            TimeForSwingPhase<< 8*TimeForGaitPeriod/16, 	11*TimeForGaitPeriod/16,		
+                                0,		 		 					3*TimeForGaitPeriod/16,		
+                                12*TimeForGaitPeriod/16, 	15*TimeForGaitPeriod/16,		
+                                4*TimeForGaitPeriod/16, 	7*TimeForGaitPeriod/16;
+        // else 
+        //     TimeForSwingPhase<< 0, 	0,		
+        //                         0,	0,		
+        //                         0,  0,		
+        //                         0, 	0;
+            rbt.SetPhase(TimePeriod, TimeForGaitPeriod, TimeForSwingPhase);
+        
+        #if(INIMODE==2)
+        float  float_initPos[12];
+        if(choosePosNum == 0)
+        {
+            // raw flat surface
+            float_initPos[0] = 84.0;  float_initPos[1] = 65.5; float_initPos[2] = -21.0;
+            float_initPos[3] = 84.0;  float_initPos[4] = -65.5; float_initPos[5] = -21.0;
+            float_initPos[6] = -84.0; float_initPos[7] = 65.5; float_initPos[8] = -21.0;
+            float_initPos[9] = -84.0; float_initPos[10] = -65.5; float_initPos[11] = -21.0;
+        }
+        else if(choosePosNum == 1)
+        {
+            // concave surface 
+            float_initPos[0] = 94.0;  float_initPos[1] = 65.5; float_initPos[2] = -35.0;
+            float_initPos[3] = 94.0;  float_initPos[4] = -65.5; float_initPos[5] = -35.0;
+            float_initPos[6] = -74.0; float_initPos[7] = 65.5; float_initPos[8] = -35.0;
+            float_initPos[9] = -74.0; float_initPos[10] = -65.5; float_initPos[11] = -35.0;  
+        }
+        else if(choosePosNum ==2)
+        {
+            // convex surface
+            float_initPos[0] = 94.0;  float_initPos[1] = 65.5; float_initPos[2] = -35.0;
+            float_initPos[3] = 94.0;  float_initPos[4] = -65.5; float_initPos[5] = -35.0;
+            float_initPos[6] = -74.0; float_initPos[7] = 65.5; float_initPos[8] = -35.0;
+            float_initPos[9] = -74.0; float_initPos[10] = -65.5; float_initPos[11] = -35.0;              
+        }
+        //   float_initPos[12]={   84.0,65.5,-21.0,
+        //                     84.0,-65.5,-21.0,
+        //                     -84.0, 65.5,-21.0,
+        //                     -84.0, -65.5,-21.0}; //raw flat surface
+        // float  float_initPos[12]={   94.0,65.5,-35.0,
+        //                     94.0,-65.5,-35.0,
+        //                     -74.0, 65.5,-35.0,
+        //                     -74.0, -65.5,-35.0}; //concave surface                          
+        //    float  float_initPos[12]={   94.0,65.5,-21.0,
+        //                                 94.0,-65.5,-21.0,
+        //                                -74.0, 65.5,-21.0,
+        //                                -74.0, -65.5,-21.0};
+        //      float  float_initPos[12]={    94,60,-16,
+        //                                     94,-60,-12,
+        //                                     -74,62,-14,
+        //                                     -74,-60,-10
+        //                                     };
+        // // 60, 60, -30,
+        // 60,-60, -30,
+        // -60, 60, -30,
+        // -60,-60, -30,
+        // 65.5,70.0,21.0,
+        // 65.5,70.0,21.0,
+        // 65.5,84.0,21.0,
+        // 65.5,84.0,21.0
+        //  80,  50, -22,
+        //  80, -50, -22,
+        // -40,  50, -22,
+        // -40, -50, -23,
+
+        //  80,  55, -16,
+        //  80, -55, -16,
+        // -40,  55, -16,
+        // -40, -69, -18,
+        //std::vector<float> float_initPos(12);
+        //   float float_initPos[12];
+        //   string2float2("../include/initPos.csv", float_initPos);//Foot end position
+            for(int i=0; i<4; i++)
+                for(int j=0;j<3;j++)
+                {
+                    InitPos(i, j) = float_initPos[i*3+j]/1000;
+                    //cout<<InitPos(i, j)<<endl;
+                }
+            rbt.SetInitPos(InitPos);
+        #endif
+        
+            rbt.InertiaInit();
+            rbt.Init();
+            rbt.SetCoMVel(TCV);
+            rbt.InverseKinematics(rbt.mfLegCmdPos);
+            rbt.mfTargetPos = rbt.mfLegCmdPos;
+        
+        #if(INIMODE==2)  
+            SetPos(rbt.mfJointCmdPos,motors,rbt.vLastSetPos);
+            rbt.UpdateJacobians();
+            float k=find_k(800.0/1000,OMEGA,Y0);
+            cout<<"k = " <<k<<endl;
+            
+        #endif
+            usleep(1e5);
+            for (size_t i = 0; i < 4; i++)
+                rbt.PumpNegtive(i);
+            
+            usleep(1e6);
+            rbt.bInitFlag = 1;
+            
+        // std::string filename = "../include/recoverinswing.csv";
+            // ofstream legcmdpos;
+            //   legcmdpos.open(filename);   // cover the old file
+            // if (legcmdpos)    cout<<filename<<" file open Successful"<<endl;
+            // else    cout<<filename<<" file open FAIL"<<endl;
+            usleep(1e3);
+    }
         if(runFlag){
             struct timeval startTime={0,0},endTime={0,0};
             double timeUse=0.0;
@@ -309,8 +409,8 @@ void *robotStateUpdateSend(void *data)
             // if(rbt.runTimes==0){
           
             rbt.NextStep();
-            rbt.CalGravity();
-
+            // rbt.CalGravity();
+            
             //     for(int i=0;i<4;i++){
             //         for(int j=0;j<3;j++)
             //         {
@@ -318,7 +418,7 @@ void *robotStateUpdateSend(void *data)
             //         }
             //         legcmdpos<<endl;
             //     }
-            //   cout<<"rbt.legcmdpos:"<<rbt.mfLegCmdPos<<endl;
+               cout<<"rbt.legcmdpos:"<<rbt.mfLegCmdPos<<endl;
             // }
             // else{
             //            cout<<"write finished"<<endl;
@@ -328,7 +428,7 @@ void *robotStateUpdateSend(void *data)
              
            rbt.AirControl();
 
-           rbt.AttitudeCorrection180();
+           //rbt.AttitudeCorrection180();
             /*******************vibration*************/
             
 
@@ -351,7 +451,6 @@ void *robotStateUpdateSend(void *data)
             cout<<"TimeRobotStateUpdateSend: "<<timeUse<<endl;
         }
     }
- 
 }
 
 void *runImpCtller(void *data)
@@ -369,7 +468,7 @@ void *runImpCtller(void *data)
     static float t=0.0;
     while (1)
     {
-        if(runFlag)
+        if(1)
         {
             gettimeofday(&startTime,NULL);
             /* get motors data  */
@@ -400,62 +499,70 @@ void *runImpCtller(void *data)
             // }            
 
 
-            /*      Admittance control     */ 
-             rbt.CalSpringForce();
-             rbt.CaloutForce();
-             rbt.CalTargetForce();
+            // /*      Admittance control     */ 
+            //  rbt.CalSpringForce();
+            //  rbt.CaloutForce();
+            //  rbt.CalTargetForce();
+             //cout<<"targetForce:"<<rbt.mfTargetForce<<endl;
              rbt.Control();   
            // rbt.VibrationControl_quad(k,1,800.0/1000);
-            //rbt.InverseKinematics(rbt.mfXc);    // Admittance control
-            cout<<"mfForce:"<<rbt.mfForce<<endl;
-            cout<<"xc_dotdot: \n"<<rbt.mfXcDotDot<<"; \nxc_dot: \n"<<rbt.mfXcDot<<"; \nxc: \n"<<rbt.mfXc<<endl;
+            // rbt.InverseKinematics(rbt.mfXc);    // Admittance control
+            // cout<<"mfForce:"<<rbt.mfForce<<endl;
+            // cout<<"xc_dotdot: \n"<<rbt.mfXcDotDot<<"; \nxc_dot: \n"<<rbt.mfXcDot<<"; \nxc: \n"<<rbt.mfXc<<endl;
              /*      Postion control with Comp      */   
             // 重置标志
            bool isAllStance=true;
-           t=program_run_time.load(); //0.5 to equal the sin curve
+           //t=program_run_time.load(); //0.5 to equal the sin curve
            //cout<<"t"<<t<<endl;
-           float z=quadSprings(t,OMEGA,Y0);
-           float cmp;
-           float cmp2;
-           cmp2=-0/1000;
-           if(z>0)
-            cmp=0/1000;
-           if(z<=0)
-            cmp=0/1000;
+        //    float z=quadSprings(t,OMEGA,Y0);
+        //    float cmp;
+        //    float cmp2;
+        //    cmp2=-0/1000;
+        //    if(z>0)
+        //     cmp=0/1000;
+        //    if(z<=0)
+        //     cmp=0/1000;
 
-           Matrix<float,4,3> tempM;
-           tempM<<0,0,z+cmp,
-                0,0,z+cmp,
-                0,0,z+cmp,
-                0,0,z+cmp;
-            for(int legnum=0;legnum<4;legnum++){
-                if(rbt.m_glLeg[legnum]->GetLegStatus()!=stance&&rbt.m_glLeg[legnum]->GetLegStatus()!=recover){
-                // tempM.row(legnum)<<0,0,0;
-                // tempM.row(3-legnum)<<0,0,cmp2;
-                isAllStance=false;
+        //    Matrix<float,4,3> tempM;
+        //    tempM<<0,0,z+cmp,
+        //         0,0,z+cmp,
+        //         0,0,z+cmp,
+        //         0,0,z+cmp;
+        //     for(int legnum=0;legnum<4;legnum++){
+        //         if(rbt.m_glLeg[legnum]->GetLegStatus()!=stance&&rbt.m_glLeg[legnum]->GetLegStatus()!=recover){
+        //         // tempM.row(legnum)<<0,0,0;
+        //         // tempM.row(3-legnum)<<0,0,cmp2;
+        //         isAllStance=false;
                 
-                } 
-            }
-            if(isAllStance){
-                tempM<<0,0,z+0/1000,
-                       0,0,z+0/1000,
-                       0,0,z+0/1000,
-                       0,0,z+0/1000;
-            }
+        //         } 
+        //     }
+        //     if(isAllStance){
+        //         tempM<<0,0,z+0/1000,
+        //                0,0,z+0/1000,
+        //                0,0,z+0/1000,
+        //                0,0,z+0/1000;
+        //     }
             //cout<<"tempM"<<tempM<<endl;
             // Matrix<float,4,3> vibraPos=rbt.mfTargetPos+tempM;
-            Matrix<float,4,3> vibraPos=rbt.mfLegCmdPos+tempM;
-            rbt.InverseKinematics(rbt.mfTargetPos); //    Postion control
-
+            //Matrix<float,4,3> vibraPos=rbt.mfLegCmdPos+tempM;
+            //rbt.InverseKinematics(rbt.mfTargetPos); //    Postion control
+            if(opFlag==1){
+            cout<<rbt.mfLegCmdPos<<endl;
+            opFlag=0;
+            }
+            /********fnn control***********/
+            // Matrix<float,4,3> mfLegCmdCompPos1=rbt.FnnStepModify();
+             //cout<<mfLegCmdCompPos1<<endl;
+            //rbt.InverseKinematics(mfLegCmdCompPos1); 
             /*      Postion control      */
-            //rbt.InverseKinematics(rbt.mfLegCmdPos); 
+            rbt.InverseKinematics(rbt.mfLegCmdPos); 
            // cout<<"mfLegCmdPos:\n"<<rbt.mfLegCmdPos<<endl;
             //cout<<"mfJointCmdPos:\n"<<rbt.mfJointCmdPos<<endl;
             // cout<<"mfLegCmdPos: \n"<<rbt.mfLegCmdPos<<endl;
             // cout<<"target_pos: \n"<<rbt.mfTargetPos<<endl;
             // cout<<"legPresPos: \n"<<rbt.mfLegPresPos<<"; \nxc: \n"<<rbt.xc<<endl;
             //cout<<"force:"<<endl<<rbt.mfForce.transpose()<<endl;
-            // cout<<"xc_dotdot: \n"<<rbt.mfXcDotDot<<"; \nxc_dot: \n"<<rbt.mfXcDot<<"; \nxc: \n"<<rbt.mfXc<<endl;
+             //cout<<"xc_dotdot: \n"<<rbt.mfXcDotDot<<"; \nxc_dot: \n"<<rbt.mfXcDot<<"; \nxc: \n"<<rbt.mfXc<<endl;
             // cout<<endl;
 
             /*      Set joint angle      */
@@ -472,8 +579,8 @@ void *runImpCtller(void *data)
             timeUse = 1e6*(endTime.tv_sec - startTime.tv_sec) + endTime.tv_usec - startTime.tv_usec;
             if(timeUse < 1e4)
                 usleep(1.0/loopRateImpCtller*1e6 - (double)(timeUse) - 10); 
-            else
-                cout<<"timeImpCtller: "<<timeUse<<endl;
+            //else
+                //cout<<"timeImpCtller: "<<timeUse<<endl;
         }
     }
   
@@ -552,12 +659,12 @@ void *timeUpdate(void *date)
         return NULL;
     }
 
-    // 配置从机地址和端叄1�71ￄ1�771ￄ1�71ￄ1�777
+    // 配置从机地址和端叄1�71ￄ1�771ￄ1�71ￄ1�7771ￄ1�71ￄ1�771ￄ1�71ￄ1�7777
     struct sockaddr_in client_addr;
     memset(&client_addr, 0, sizeof(client_addr));
     client_addr.sin_family = AF_INET;
     client_addr.sin_addr.s_addr = inet_addr("192.168.137.48"); // 从机的IP地址
-    client_addr.sin_port = htons(65432); // 和主机程序发送数据的端口丢�臄1�71ￄ1�771ￄ1�71ￄ1�777
+    client_addr.sin_port = htons(65432); // 和主机程序发送数据的端口丢�臄1�71ￄ1�771ￄ1�71ￄ1�7771ￄ1�71ￄ1�771ￄ1�71ￄ1�7777
 
     // 绑定socket
     if (bind(sockfd, (struct sockaddr*)&client_addr, sizeof(client_addr)) < 0) {
@@ -600,7 +707,7 @@ void *timeUpdate(void *date)
         // 解析秒数和微秒数
         char delimiter = ',';
 
-    // 拆分字符丄1�71ￄ1�771ￄ1�71ￄ1�777
+    // 拆分字符丄1�71ￄ1�771ￄ1�71ￄ1�7771ￄ1�71ￄ1�771ￄ1�71ￄ1�7777
      std::vector<std::string> tokens = split(STtime, delimiter);
 
     // 输出结果
@@ -687,24 +794,24 @@ int main(int argc, char ** argv)
 		printf("create pthread3 error!\n");
 		exit(1);
 	}
-    ret = pthread_create(&th4,NULL,dataSave,NULL);
-    if(ret != 0)
-	{
-		printf("create pthread4 error!\n");
-		exit(1);
-	}
+    // ret = pthread_create(&th4,NULL,dataSave,NULL);
+    // if(ret != 0)
+	// {
+	// 	printf("create pthread4 error!\n");
+	// 	exit(1);
+	// }
     //  ret = pthread_create(&th5,NULL,SvUpdate,NULL);
     // if(ret != 0)
 	// {
 	// 	printf("create pthread5 error!\n");
 	// 	exit(1);
 	// }
-     ret = pthread_create(&th6,NULL,timeUpdate,NULL);
-    if(ret != 0)
-	{
-		printf("create pthread6 error!\n");
-		exit(1);
-	}
+    //  ret = pthread_create(&th6,NULL,timeUpdate,NULL);
+    // if(ret != 0)
+	// {
+	// 	printf("create pthread6 error!\n");
+	// 	exit(1);
+	// }
     pthread_join(th1, NULL);
     pthread_join(th2, NULL);
     pthread_join(th3, NULL);

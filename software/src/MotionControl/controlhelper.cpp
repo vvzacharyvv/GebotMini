@@ -1,5 +1,6 @@
 #include "controlhelper.h"
 #include <string>
+extern int LastJointPos; 
 /**
  * @brief 
  * Open the file to read float data to dest.    
@@ -212,8 +213,23 @@ void SetPos(Matrix<float,4,3> jointCmdPos,DxlAPI& motors,vector<float>& vLastSet
 
     // Ensure to set the last 4 positions correctly
     float offSet[]= OFFSET;
+    float offSet1[]= OFFSET1;
+    float offSet2[]= OFFSET2;
+    float* offSetOutput;
+    if(LastJointPos==0)
+    {
+        offSetOutput = offSet;
+    }
+    if(LastJointPos==1)
+    {
+        offSetOutput = offSet1;
+    }
+    if(LastJointPos==2)
+    {
+        offSetOutput = offSet2;
+    }        
     for (int i = 12; i < 16; ++i) {
-        vLastSetPos[i] = setPos[i]+offSet[i-12];
+        vLastSetPos[i] = setPos[i]+offSetOutput[i-12];
     }
 
     motors.setPosition(vLastSetPos);

@@ -17,6 +17,7 @@ void CRobotControl::Init(){
     mfTargetForce.setZero();
     mfLastForce.setZero();
     fCtlRate = 100;
+    comForce=-9.8;
     // cal inertial
     m_fIxx=((m_fLength*m_fLength)+(m_fHeight*m_fHeight))*m_fMass/12;
 }
@@ -64,7 +65,13 @@ void CRobotControl::UpdateImuData()
 }
 
 void CRobotControl::UpdateFtsPresForce(vector<float> present_torque)
-{
+{   
+    for(int i=0;i<3;i++)
+        for(int j=0;j<4;j++){
+            if((fabs(mfForce(i,j)-mfLastForce(i,j))/fabs(mfForce(i,j)))>0.6)
+            mfForce=mfLastForce;
+            return ;
+        }
     
     Matrix<float, 4, 4> temp;
     if(mfForce(2,3) - mfLastForce(2,3) > 0.3 || mfForce(2,3) - mfLastForce(2,3) < -0.3)
@@ -191,6 +198,8 @@ void CRobotControl::VibrationControl_quad(float k, float c,float m)
 void CRobotControl::Control()
 {
     mfTargetForce.col(2)= mfTargetForce.col(2)/10;
+    mfTargetForce.col(1)-=mfTargetForce.col(1);
+    mfTargetForce.col(0)-=mfTargetForce.col(0);
     if(m_eControlMode == IMPEDANCE)  // Impedance control
     {
         mfXcDot = (mfLegPresPos - mfLegLastPos) * fCtlRate;
@@ -285,7 +294,7 @@ void CRobotControl::CalTargetForce(){
     stanceCount=(int)stanceLegNum.size();
     for(int i=0;i<stanceCount;i++)
         mfTargetForce.row(stanceLegNum[i])<<mfOutForce.row(stanceLegNum[i]);
-    cout<<"mfTargetForce"<<mfTargetForce<<endl;
+    //cout<<"mfTargetForce"<<mfTargetForce<<endl;
 }
 void CRobotControl::CalGravity(){
     Matrix<float,3,3> mfTempASM; 
@@ -405,7 +414,7 @@ void CRobotControl::CalGravity(){
 
 }
 void CRobotControl::CalSpringForce(){
-        float K[4]={1,1,1,1};
+        float K[4]={3,3,3,3};
         float D[4]={1,1,1,1};
         int stanceCount=0;
         std::vector<int> stanceLegNum;
@@ -420,11 +429,13 @@ void CRobotControl::CalSpringForce(){
         stanceCount=(int)stanceLegNum.size();
         Matrix<float, 1,3> TCV;
         TCV<<VELX,0,0;
+        float tempforce=0;
         for(int i=0;i<stanceCount;i++){//
             Matrix<float, 1,3> force=K[stanceLegNum[i]]*(mfLegCmdPos.row(stanceLegNum[i])-mfLegPresPos.row(stanceLegNum[i]))+D[stanceLegNum[i]]*(TCV-mfLegPresVel.row(stanceLegNum[i]));
             mfSpringForce.row(stanceLegNum[i])<<force;
-        cout<<"mfSpringForce"<<mfSpringForce<<endl;
+            tempforce=mfForce(2,stanceLegNum[i])+tempforce;
         }
+        comForce=tempforce*10;
    }
     void CRobotControl::CaloutForce(){
         mfOutForce=mfGravityForce+mfSpringForce;
@@ -460,7 +471,7 @@ void CRobotControl::CalVmcCom()
                         }
                         isOk=1;
                     }
-                    
+                
             }
         }
 

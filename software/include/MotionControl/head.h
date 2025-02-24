@@ -13,14 +13,17 @@
 // #define CompDisA3 30*0.001  
 // #define CompDisALL 16*0.001     // Compensation of Distance  AttitudeCorrection() All stace phase
 /* Position control */
-#define StepHeight_F  25.0/1000   //swingUp
-#define StepHeight_H  25.0/1000   //swingUp
-#define Press  26.0/1000.0  //19.0/1000        //attach press 7
+#define StepHeight_F  37.0/1000   //swingUp
+#define StepHeight_H  37.0/1000   //swingUp
+#define Press  0/1000.0  //19.0/1000        //attach press 7
 #define CompDisA1 -8.0/1000.0   // Compensation of Distance in AttitudeCorrection() with Amble gait
-#define CompDisA2 18.0/1000.0 
-#define CompDisA3 18.0/1000.0   
-#define CompDisALL 8.0 /1000.0     // Compensation of Distance  AttitudeCorrection() All stace phase
-#define OFFSET {-0.1,0.0,-0,-0.1}
+#define CompDisA2 22.0/1000.0 
+#define CompDisA3 22.0/1000.0   
+#define CompDisALL 10/1000.0     // Compensation of Distance  AttitudeCorrection() All stace phase
+#define OFFSET {-0.1,0.0,0.05,-0.2}
+#define OFFSET1 {0.2,-0.2,-0.2,0.2}
+#define OFFSET2 {-0.2,0.2,0.2,-0.2}
+
 #define THREAD1_ENABLE 1
 #define THREAD2_ENABLE 1
 //  1:  Motor angle
