@@ -12,12 +12,11 @@ CRobotControl rbt(110.0,60.0,20.0,800.0,ADMITTANCE);
 DxlAPI motors("/dev/ttyAMA0", 3000000, rbt.ID, 2);
 // std::atomic<bool> runFlag(true); 
 bool runFlag = 0;
-bool restartFlag = 1;
+bool curveFlag = 0;
 int choosePosNum = 0;
 int LastJointPos = 0;
 std::mutex mtx_choosePosNum;
 std::mutex mtx_LastJointPos;
-std::mutex mtx_restartFlag;
 std::atomic<float> program_run_time(0.0);
 boost::lockfree::spsc_queue<vector<float>, boost::lockfree::capacity<1024>> ringBuffer_torque;
 boost::lockfree::spsc_queue<Matrix<float,3,4>, boost::lockfree::capacity<1024>> ringBuffer_force;
@@ -63,11 +62,10 @@ void *udpConnect(void *data)
                 }
         ret=commandJudge((char*)string("xed").c_str(),(char *)buf.c_str());
         if(ret){
-                    std::lock_guard<std::mutex> lock(mtx_choosePosNum);  
-                    std::lock_guard<std::mutex> lock2(mtx_LastJointPos);  
-                    ++choosePosNum;
+                    // std::lock_guard<std::mutex> lock(mtx_choosePosNum);  
+                    std::lock_guard<std::mutex> lock2(mtx_LastJointPos); 
+                    curveFlag = 1;                     
                     ++LastJointPos;                
-                    restartFlag=1;
                     goto END;
                }
         ret=commandJudge((char*)string("pumpPositive").c_str(),(char *)buf.c_str());
@@ -249,158 +247,170 @@ void *robotStateUpdateSend(void *data)
     vector<float>initialMotorVel(16,80);
     vector<int>initialMotorAcc(16,80);
     TCV << VELX, 0, 0,0,0,0 ;// X, Y , alpha 
-        
+
+    //motors initial
+    motors.setOperatingMode(3);
+    motors.torqueEnable();
+    // motors.setVelocity(initialMotorVel);
+    // motors.setAcceleration(initialMotorAcc);
+    motors.getPosition();
+#if(INIMODE==1)
+    vector<float> init_Motor_angle(12);
+    float float_init_Motor_angle[12];
+    string2float("../include/init_Motor_angle.csv", float_init_Motor_angle);//Motor angle     d
+    //cout<<"____________"<<endl;
+    for(int i=0; i<4; i++)
+        for(int j=0;j<3;j++)
+        {
+            float_init_Motor_angle[i*3+j] = float_init_Motor_angle[i*3+j] * 3.1416/180; //to rad
+            init_Motor_angle[i*3+j] = float_init_Motor_angle[i*3+j];      //vector
+            rbt.mfJointCmdPos(i,j) = float_init_Motor_angle[i*3+j];            //rbt.forwardKinematics
+            //cout<<init_Motor_angle[i*3+j]<<endl;
+        }
+    rbt.forwardKinematics(0);
+    rbt.setInitPos(rbt.mfLegCmdPos);        //legCmdPos
+    cout<<"legCmdPos:\n"<<rbt.legCmdPos<<endl ;
+
+    motors.setPosition(init_Motor_angle);
+#endif    
+
+    //      rbt initial
+    // TimeForStancePhase<< 0,                       TimeForGaitPeriod/2.0,     // diagonal
+    //                      TimeForGaitPeriod/2.0,   TimeForGaitPeriod, 
+    //                      TimeForGaitPeriod/2.0,   TimeForGaitPeriod, 
+    //                      0,                       TimeForGaitPeriod/2.0;
+    // TimeForSwingPhase<< TimeForGaitPeriod/4.0 *2,          TimeForGaitPeriod/4.0 *3,   // tripod
+    //                      0,             TimeForGaitPeriod/4.0,
+    //                      TimeForGaitPeriod/4.0 *3,    TimeForGaitPeriod,
+    //                      TimeForGaitPeriod/4.0  ,          TimeForGaitPeriod/4.0 *2;
+//if(VELX != 0)
+    TimeForSwingPhase<< 8*TimeForGaitPeriod/16, 	11*TimeForGaitPeriod/16,		
+                        0,		 		 					3*TimeForGaitPeriod/16,		
+                        12*TimeForGaitPeriod/16, 	15*TimeForGaitPeriod/16,		
+                        4*TimeForGaitPeriod/16, 	7*TimeForGaitPeriod/16;
+// else 
+//     TimeForSwingPhase<< 0, 	0,		
+//                         0,	0,		
+//                         0,  0,		
+//                         0, 	0;
+    rbt.SetPhase(TimePeriod, TimeForGaitPeriod, TimeForSwingPhase);
+
+#if(INIMODE==2)
+// float  float_initPos[12];
+// if(choosePosNum == 0)
+// {
+//     // raw flat surface
+//     float_initPos[0] = 84.0;  float_initPos[1] = 65.5; float_initPos[2] = -21.0;
+//     float_initPos[3] = 84.0;  float_initPos[4] = -65.5; float_initPos[5] = -21.0;
+//     float_initPos[6] = -84.0; float_initPos[7] = 65.5; float_initPos[8] = -21.0;
+//     float_initPos[9] = -84.0; float_initPos[10] = -65.5; float_initPos[11] = -21.0;
+// }
+// else if(choosePosNum == 1)
+// {
+//     // concave surface 
+//     float_initPos[0] = 94.0;  float_initPos[1] = 65.5; float_initPos[2] = -35.0;
+//     float_initPos[3] = 94.0;  float_initPos[4] = -65.5; float_initPos[5] = -35.0;
+//     float_initPos[6] = -74.0; float_initPos[7] = 65.5; float_initPos[8] = -35.0;
+//     float_initPos[9] = -74.0; float_initPos[10] = -65.5; float_initPos[11] = -35.0;  
+// }
+// else if(choosePosNum ==2)
+// {
+//     // convex surface
+//     float_initPos[0] = 94.0;  float_initPos[1] = 65.5; float_initPos[2] = -35.0;
+//     float_initPos[3] = 94.0;  float_initPos[4] = -65.5; float_initPos[5] = -35.0;
+//     float_initPos[6] = -74.0; float_initPos[7] = 65.5; float_initPos[8] = -35.0;
+//     float_initPos[9] = -74.0; float_initPos[10] = -65.5; float_initPos[11] = -35.0;              
+// }
+  float float_initPos[12]={   84.0,65.5,-21.0,
+                    84.0,-65.5,-21.0,
+                    -84.0, 65.5,-21.0,
+                    -84.0, -65.5,-21.0}; //raw flat surface
+// float  float_initPos[12]={   94.0,65.5,-35.0,
+//                     94.0,-65.5,-35.0,
+//                     -74.0, 65.5,-35.0,
+//                     -74.0, -65.5,-35.0}; //concave surface                          
+//    float  float_initPos[12]={   94.0,65.5,-21.0,
+//                                 94.0,-65.5,-21.0,
+//                                -74.0, 65.5,-21.0,
+//                                -74.0, -65.5,-21.0};
+//      float  float_initPos[12]={    94,60,-16,
+//                                     94,-60,-12,
+//                                     -74,62,-14,
+//                                     -74,-60,-10
+//                                     };
+// // 60, 60, -30,
+// 60,-60, -30,
+// -60, 60, -30,
+// -60,-60, -30,
+// 65.5,70.0,21.0,
+// 65.5,70.0,21.0,
+// 65.5,84.0,21.0,
+// 65.5,84.0,21.0
+//  80,  50, -22,
+//  80, -50, -22,
+// -40,  50, -22,
+// -40, -50, -23,
+
+//  80,  55, -16,
+//  80, -55, -16,
+// -40,  55, -16,
+// -40, -69, -18,
+//std::vector<float> float_initPos(12);
+//   float float_initPos[12];
+//   string2float2("../include/initPos.csv", float_initPos);//Foot end position
+    for(int i=0; i<4; i++)
+        for(int j=0;j<3;j++)
+        {
+            InitPos(i, j) = float_initPos[i*3+j]/1000;
+            //cout<<InitPos(i, j)<<endl;
+        }
+    rbt.SetInitPos(InitPos);
+#endif
+
+    rbt.InertiaInit();
+    rbt.Init();
+    rbt.SetCoMVel(TCV);
+    rbt.InverseKinematics(rbt.mfLegCmdPos);
+    rbt.mfTargetPos = rbt.mfLegCmdPos;
+
+#if(INIMODE==2)  
+    SetPos(rbt.mfJointCmdPos,motors,rbt.vLastSetPos);
+    rbt.UpdateJacobians();
+    float k=find_k(800.0/1000,OMEGA,Y0);
+    cout<<"k = " <<k<<endl;
+    
+#endif
+    usleep(1e5);
+    for (size_t i = 0; i < 4; i++)
+        rbt.PumpNegtive(i);
+    
+    usleep(1e6);
+    rbt.bInitFlag = 1;
+    
+// std::string filename = "../include/recoverinswing.csv";
+    // ofstream legcmdpos;
+    //   legcmdpos.open(filename);   // cover the old file
+    // if (legcmdpos)    cout<<filename<<" file open Successful"<<endl;
+    // else    cout<<filename<<" file open FAIL"<<endl;
+    usleep(1e3);        
     while(1)
     {
-        if(restartFlag){
-            std::lock_guard<std::mutex> lock3(mtx_restartFlag);
-            restartFlag = 0;
-            //motors initial
-            motors.setOperatingMode(3);
-            motors.torqueEnable();
-            // motors.setVelocity(initialMotorVel);
-            // motors.setAcceleration(initialMotorAcc);
-            motors.getPosition();
-        #if(INIMODE==1)
-            vector<float> init_Motor_angle(12);
-            float float_init_Motor_angle[12];
-            string2float("../include/init_Motor_angle.csv", float_init_Motor_angle);//Motor angle     d
-            //cout<<"____________"<<endl;
-            for(int i=0; i<4; i++)
-                for(int j=0;j<3;j++)
-                {
-                    float_init_Motor_angle[i*3+j] = float_init_Motor_angle[i*3+j] * 3.1416/180; //to rad
-                    init_Motor_angle[i*3+j] = float_init_Motor_angle[i*3+j];      //vector
-                    rbt.mfJointCmdPos(i,j) = float_init_Motor_angle[i*3+j];            //rbt.forwardKinematics
-                    //cout<<init_Motor_angle[i*3+j]<<endl;
-                }
-            rbt.forwardKinematics(0);
-            rbt.setInitPos(rbt.mfLegCmdPos);        //legCmdPos
-            cout<<"legCmdPos:\n"<<rbt.legCmdPos<<endl ;
-
-            motors.setPosition(init_Motor_angle);
-        #endif    
-        
-            //      rbt initial
-            // TimeForStancePhase<< 0,                       TimeForGaitPeriod/2.0,     // diagonal
-            //                      TimeForGaitPeriod/2.0,   TimeForGaitPeriod, 
-            //                      TimeForGaitPeriod/2.0,   TimeForGaitPeriod, 
-            //                      0,                       TimeForGaitPeriod/2.0;
-            // TimeForSwingPhase<< TimeForGaitPeriod/4.0 *2,          TimeForGaitPeriod/4.0 *3,   // tripod
-            //                      0,             TimeForGaitPeriod/4.0,
-            //                      TimeForGaitPeriod/4.0 *3,    TimeForGaitPeriod,
-            //                      TimeForGaitPeriod/4.0  ,          TimeForGaitPeriod/4.0 *2;
-        //if(VELX != 0)
-            TimeForSwingPhase<< 8*TimeForGaitPeriod/16, 	11*TimeForGaitPeriod/16,		
-                                0,		 		 					3*TimeForGaitPeriod/16,		
-                                12*TimeForGaitPeriod/16, 	15*TimeForGaitPeriod/16,		
-                                4*TimeForGaitPeriod/16, 	7*TimeForGaitPeriod/16;
-        // else 
-        //     TimeForSwingPhase<< 0, 	0,		
-        //                         0,	0,		
-        //                         0,  0,		
-        //                         0, 	0;
-            rbt.SetPhase(TimePeriod, TimeForGaitPeriod, TimeForSwingPhase);
-        
-        #if(INIMODE==2)
-        float  float_initPos[12];
-        if(choosePosNum == 0)
-        {
-            // raw flat surface
-            float_initPos[0] = 84.0;  float_initPos[1] = 65.5; float_initPos[2] = -21.0;
-            float_initPos[3] = 84.0;  float_initPos[4] = -65.5; float_initPos[5] = -21.0;
-            float_initPos[6] = -84.0; float_initPos[7] = 65.5; float_initPos[8] = -21.0;
-            float_initPos[9] = -84.0; float_initPos[10] = -65.5; float_initPos[11] = -21.0;
-        }
-        else if(choosePosNum == 1)
-        {
-            // concave surface 
-            float_initPos[0] = 94.0;  float_initPos[1] = 65.5; float_initPos[2] = -35.0;
-            float_initPos[3] = 94.0;  float_initPos[4] = -65.5; float_initPos[5] = -35.0;
-            float_initPos[6] = -74.0; float_initPos[7] = 65.5; float_initPos[8] = -35.0;
-            float_initPos[9] = -74.0; float_initPos[10] = -65.5; float_initPos[11] = -35.0;  
-        }
-        else if(choosePosNum ==2)
-        {
-            // convex surface
-            float_initPos[0] = 94.0;  float_initPos[1] = 65.5; float_initPos[2] = -35.0;
-            float_initPos[3] = 94.0;  float_initPos[4] = -65.5; float_initPos[5] = -35.0;
-            float_initPos[6] = -74.0; float_initPos[7] = 65.5; float_initPos[8] = -35.0;
-            float_initPos[9] = -74.0; float_initPos[10] = -65.5; float_initPos[11] = -35.0;              
-        }
-        //   float_initPos[12]={   84.0,65.5,-21.0,
-        //                     84.0,-65.5,-21.0,
-        //                     -84.0, 65.5,-21.0,
-        //                     -84.0, -65.5,-21.0}; //raw flat surface
-        // float  float_initPos[12]={   94.0,65.5,-35.0,
-        //                     94.0,-65.5,-35.0,
-        //                     -74.0, 65.5,-35.0,
-        //                     -74.0, -65.5,-35.0}; //concave surface                          
-        //    float  float_initPos[12]={   94.0,65.5,-21.0,
-        //                                 94.0,-65.5,-21.0,
-        //                                -74.0, 65.5,-21.0,
-        //                                -74.0, -65.5,-21.0};
-        //      float  float_initPos[12]={    94,60,-16,
-        //                                     94,-60,-12,
-        //                                     -74,62,-14,
-        //                                     -74,-60,-10
-        //                                     };
-        // // 60, 60, -30,
-        // 60,-60, -30,
-        // -60, 60, -30,
-        // -60,-60, -30,
-        // 65.5,70.0,21.0,
-        // 65.5,70.0,21.0,
-        // 65.5,84.0,21.0,
-        // 65.5,84.0,21.0
-        //  80,  50, -22,
-        //  80, -50, -22,
-        // -40,  50, -22,
-        // -40, -50, -23,
-
-        //  80,  55, -16,
-        //  80, -55, -16,
-        // -40,  55, -16,
-        // -40, -69, -18,
-        //std::vector<float> float_initPos(12);
-        //   float float_initPos[12];
-        //   string2float2("../include/initPos.csv", float_initPos);//Foot end position
+        if(curveFlag){
+            curveFlag = 0;
+            float  float_initPos[12]={   94.0,65.5,-35.0,
+                    94.0,-65.5,-35.0,
+                    -74.0, 65.5,-35.0,
+                    -74.0, -65.5,-35.0}; //concave surface 
             for(int i=0; i<4; i++)
                 for(int j=0;j<3;j++)
                 {
                     InitPos(i, j) = float_initPos[i*3+j]/1000;
                     //cout<<InitPos(i, j)<<endl;
                 }
+            // rbt.mfLegCmdPos = InitPos;     
             rbt.SetInitPos(InitPos);
-        #endif
-        
-            rbt.InertiaInit();
-            rbt.Init();
-            rbt.SetCoMVel(TCV);
-            rbt.InverseKinematics(rbt.mfLegCmdPos);
-            rbt.mfTargetPos = rbt.mfLegCmdPos;
-        
-        #if(INIMODE==2)  
-            SetPos(rbt.mfJointCmdPos,motors,rbt.vLastSetPos);
-            rbt.UpdateJacobians();
-            float k=find_k(800.0/1000,OMEGA,Y0);
-            cout<<"k = " <<k<<endl;
-            
-        #endif
-            usleep(1e5);
-            for (size_t i = 0; i < 4; i++)
-                rbt.PumpNegtive(i);
-            
-            usleep(1e6);
-            rbt.bInitFlag = 1;
-            
-        // std::string filename = "../include/recoverinswing.csv";
-            // ofstream legcmdpos;
-            //   legcmdpos.open(filename);   // cover the old file
-            // if (legcmdpos)    cout<<filename<<" file open Successful"<<endl;
-            // else    cout<<filename<<" file open FAIL"<<endl;
-            usleep(1e3);
-    }
+
+        }
         if(runFlag){
             struct timeval startTime={0,0},endTime={0,0};
             double timeUse=0.0;

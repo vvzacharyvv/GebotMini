@@ -319,25 +319,10 @@ void CGebot::SetCoMVel(Matrix<float, 6,1> tCV)
  */
 void CGebot::UpdatejointPresPosAndVel(vector<float> present_position)
 {
-     mfJointPresPos=inverseMotorMapping(present_position);
+    mfJointPresPos=inverseMotorMapping(present_position);
     float offSet[]= OFFSET;
-    float offSet1[]= OFFSET1;
-    float offSet2[]= OFFSET2;
-    float* offSetOutput;
-    if(LastJointPos==0)
-    {
-        offSetOutput = offSet;
-    }
-    if(LastJointPos==1)
-    {
-        offSetOutput = offSet1;
-    }
-    if(LastJointPos==2)
-    {
-        offSetOutput = offSet2;
-    } 
     for (int i =0;i<4;i++)
-        mfJointPresPos(i,3)=mfJointPresPos(i,3)-offSetOutput[i];
+        mfJointPresPos(i,3)=mfJointPresPos(i,3)-offSet[i];
     //cout<<"mfJointPresPos: " <<mfJointPresPos<<endl;
     // cout<<"mfJointLastPos: " <<mfJointLastPos<<endl;
     for(int legNum=0;legNum<4;legNum++)
@@ -441,7 +426,6 @@ void CGebot::NextStep()
         }
         else if(ls == recover){
             mfLegCmdPos(legNum, 2) +=  Press / iStatusCounterBuffer[legNum][(int)ls];
-
         }
         else if( ls == detach || ls == swingUp )   //swing phase 
         {
